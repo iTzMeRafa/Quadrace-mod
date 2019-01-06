@@ -160,7 +160,7 @@ private:
 	// DDRace
 
 
-	void HandleTiles(int Index);
+	void HandleTiles(int Index, float FractionOfTick);
 	float m_Time;
 	int m_LastBroadcast;
 	void DDRaceInit();
@@ -208,7 +208,7 @@ public:
 	int m_TuneZoneOld;
 	int m_PainSoundTimer;
 	int m_LastMove;
-	int m_StartTime;
+	float m_StartTime;
 	vec2 m_PrevPos;
 	int m_TeleCheckpoint;
 	int m_CpTick;

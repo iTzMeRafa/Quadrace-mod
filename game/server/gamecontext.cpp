@@ -1773,7 +1773,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				if(m_apPlayers[i] && Score()->PlayerData(i)->m_CurrentTime > 0)
 				{
 					CNetMsg_Sv_PlayerTime Msg;
-					Msg.m_Time = Score()->PlayerData(i)->m_CurrentTime * 100;
+					Msg.m_Time = round_to_int(Score()->PlayerData(i)->m_CurrentTime * 100);
 					Msg.m_ClientID = i;
 					Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ClientID);
 					//also send its time to others
@@ -1785,7 +1785,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			{
 				//TODO: make function for this fucking steps
 				CNetMsg_Sv_PlayerTime Msg;
-				Msg.m_Time = Score()->PlayerData(ClientID)->m_CurrentTime * 100;
+				Msg.m_Time = round_to_int(Score()->PlayerData(ClientID)->m_CurrentTime * 100);
 				Msg.m_ClientID = ClientID;
 				Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, -1);
 			}
@@ -3318,8 +3318,8 @@ void CGameContext::OnSetAuthed(int ClientID, int Level)
 void CGameContext::SendRecord(int ClientID)
 {
 	CNetMsg_Sv_Record RecordsMsg;
-	RecordsMsg.m_PlayerTimeBest = Score()->PlayerData(ClientID)->m_BestTime * 100.0f;
-	RecordsMsg.m_ServerTimeBest = m_pController->m_CurrentRecord * 100.0f; //TODO: finish this
+	RecordsMsg.m_PlayerTimeBest = round_to_int(Score()->PlayerData(ClientID)->m_BestTime * 100.0f);
+    RecordsMsg.m_ServerTimeBest = round_to_int(m_pController->m_CurrentRecord * 100.0f); //TODO: finish this
 	Server()->SendPackMsg(&RecordsMsg, MSGFLAG_VITAL, ClientID);
 }
 

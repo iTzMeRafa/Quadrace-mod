@@ -1325,7 +1325,7 @@ void CCharacter::HandleSkippableTiles(int Index)
 	}
 }
 
-void CCharacter::HandleTiles(int Index)
+void CCharacter::HandleTiles(int Index, float FractionOfTick)
 {
 	CGameControllerDDRace* Controller = (CGameControllerDDRace*)GameServer()->m_pController;
 	int MapIndex = Index;
@@ -1385,6 +1385,7 @@ void CCharacter::HandleTiles(int Index)
 		m_LastBonus = false;
 		return;
 	}
+	m_Time = round_to_int(((float)(Server()->Tick()-1.0f+FractionOfTick - m_StartTime) / ((float)Server()->TickSpeed()))*1000.f)/1000.f;
 	int cp = GameServer()->Collision()->IsCheckpoint(MapIndex);
 	if(cp != -1 && m_DDRaceState == DDRACE_STARTED && cp > m_CpActive)
 	{
@@ -1394,7 +1395,7 @@ void CCharacter::HandleTiles(int Index)
 		if(m_pPlayer->m_ClientVersion >= VERSION_DDRACE) {
 			CPlayerData *pData = GameServer()->Score()->PlayerData(m_pPlayer->GetCID());
 			CNetMsg_Sv_DDRaceTime Msg;
-			Msg.m_Time = (int)m_Time;
+			Msg.m_Time = round_to_int(m_Time);
 			Msg.m_Check = 0;
 			Msg.m_Finish = 0;
 
@@ -1403,7 +1404,7 @@ void CCharacter::HandleTiles(int Index)
 				if(pData->m_BestTime && pData->m_aBestCpTime[m_CpActive] != 0)
 				{
 					float Diff = (m_CpCurrent[m_CpActive] - pData->m_aBestCpTime[m_CpActive])*100;
-					Msg.m_Check = (int)Diff;
+					Msg.m_Check = round_to_int(Diff);
 				}
 			}
 
@@ -1419,7 +1420,7 @@ void CCharacter::HandleTiles(int Index)
 		if(m_pPlayer->m_ClientVersion >= VERSION_DDRACE) {
 			CPlayerData *pData = GameServer()->Score()->PlayerData(m_pPlayer->GetCID());
 			CNetMsg_Sv_DDRaceTime Msg;
-			Msg.m_Time = (int)m_Time;
+			Msg.m_Time = round_to_int(m_Time);
 			Msg.m_Check = 0;
 			Msg.m_Finish = 0;
 
@@ -1428,7 +1429,7 @@ void CCharacter::HandleTiles(int Index)
 				if(pData->m_BestTime && pData->m_aBestCpTime[m_CpActive] != 0)
 				{
 					float Diff = (m_CpCurrent[m_CpActive] - pData->m_aBestCpTime[m_CpActive])*100;
-					Msg.m_Check = (int)Diff;
+					Msg.m_Check = round_to_int(Diff);
 				}
 			}
 
@@ -1464,7 +1465,7 @@ void CCharacter::HandleTiles(int Index)
 		}
 		if(CanBegin)
 		{
-			Teams()->OnCharacterStart(m_pPlayer->GetCID());
+			Teams()->OnCharacterStart(m_pPlayer->GetCID(), FractionOfTick);
 			m_CpActive = -2;
 		} else {
 
@@ -1475,7 +1476,7 @@ void CCharacter::HandleTiles(int Index)
 
 	// finish
 	if(((m_TileIndex == TILE_END) || (m_TileFIndex == TILE_END) || FTile1 == TILE_END || FTile2 == TILE_END || FTile3 == TILE_END || FTile4 == TILE_END || Tile1 == TILE_END || Tile2 == TILE_END || Tile3 == TILE_END || Tile4 == TILE_END) && m_DDRaceState == DDRACE_STARTED)
-		Controller->m_Teams.OnCharacterFinish(m_pPlayer->GetCID());
+		Controller->m_Teams.OnCharacterFinish(m_pPlayer->GetCID(), FractionOfTick);
 
 	// freeze
 	if(((m_TileIndex == TILE_FREEZE) || (m_TileFIndex == TILE_FREEZE)) && !m_Super && !m_DeepFreeze)
@@ -1873,6 +1874,7 @@ void CCharacter::HandleTiles(int Index)
 			return;
 		int Num = Controller->m_TeleOuts[z-1].size();
 		m_Core.m_Pos = Controller->m_TeleOuts[z-1][(!Num)?Num:rand() % Num];
+		m_StartTime += 1.0f - FractionOfTick;
 		if(!g_Config.m_SvTeleportHoldHook)
 		{
 			m_Core.m_HookedPlayer = -1;
@@ -1894,6 +1896,7 @@ void CCharacter::HandleTiles(int Index)
 			return;
 		int Num = Controller->m_TeleOuts[evilz-1].size();
 		m_Core.m_Pos = Controller->m_TeleOuts[evilz-1][(!Num)?Num:rand() % Num];
+		m_StartTime += 1.0f - FractionOfTick;
 		if (!g_Config.m_SvOldTeleportHook && !g_Config.m_SvOldTeleportWeapons)
 		{
 			m_Core.m_Vel = vec2(0,0);
@@ -1925,6 +1928,7 @@ void CCharacter::HandleTiles(int Index)
 			{
 				int Num = Controller->m_TeleCheckOuts[k].size();
 				m_Core.m_Pos = Controller->m_TeleCheckOuts[k][(!Num)?Num:rand() % Num];
+				m_StartTime += 1.0f - FractionOfTick;
 				m_Core.m_Vel = vec2(0,0);
 
 				if(!g_Config.m_SvTeleportHoldHook)
@@ -1968,6 +1972,7 @@ void CCharacter::HandleTiles(int Index)
 			{
 				int Num = Controller->m_TeleCheckOuts[k].size();
 				m_Core.m_Pos = Controller->m_TeleCheckOuts[k][(!Num)?Num:rand() % Num];
+				m_StartTime += 1.0f - FractionOfTick;
 
 				if(!g_Config.m_SvTeleportHoldHook)
 				{
@@ -2095,8 +2100,6 @@ void CCharacter::DDRaceTick()
 
 void CCharacter::DDRacePostCoreTick()
 {
-	m_Time = (float)(Server()->Tick() - m_StartTime) / ((float)Server()->TickSpeed());
-
 	if (m_pPlayer->m_DefEmoteReset >= 0 && m_pPlayer->m_DefEmoteReset <= Server()->Tick())
 	{
 	m_pPlayer->m_DefEmoteReset = -1;

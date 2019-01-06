@@ -23,7 +23,7 @@ void CGameTeams::Reset()
 	}
 }
 
-void CGameTeams::OnCharacterStart(int ClientID)
+void CGameTeams::OnCharacterStart(int ClientID, float FractionOfTick)
 {
 	int Tick = Server()->Tick();
 	CCharacter* pStartingChar = Character(ClientID);
@@ -102,26 +102,8 @@ void CGameTeams::OnCharacterStart(int ClientID)
 					if (pPlayer && (pPlayer->IsPlaying() || TeamLocked(m_Core.Team(ClientID))))
 					{
 						SetDDRaceState(pPlayer, DDRACE_STARTED);
-						SetStartTime(pPlayer, Tick);
-
-						if (First)
-							First = false;
-						else
-							str_append(aBuf, ", ", sizeof(aBuf));
-
-						str_append(aBuf, GameServer()->Server()->ClientName(i), sizeof(aBuf));
-					}
-				}
-			}
-
-			if (g_Config.m_SvTeam < 3 && g_Config.m_SvTeamMaxSize != 2 && g_Config.m_SvPauseable)
-			{
-				for (int i = 0; i < MAX_CLIENTS; ++i)
-				{
-					CPlayer* pPlayer = GetPlayer(i);
-					if (m_Core.Team(ClientID) == m_Core.Team(i) && pPlayer && (pPlayer->IsPlaying() || TeamLocked(m_Core.Team(ClientID))))
-					{
-						GameServer()->SendChatTarget(i, aBuf);
+						if(pPlayer->GetCharacter())
+                            pPlayer->GetCharacter()->m_StartTime = Tick-1.0f+FractionOfTick;
 					}
 				}
 			}
@@ -129,24 +111,24 @@ void CGameTeams::OnCharacterStart(int ClientID)
 	}
 }
 
-void CGameTeams::OnCharacterFinish(int ClientID)
+void CGameTeams::OnCharacterFinish(int ClientID, float FractionOfTick)
 {
 	if (m_Core.Team(ClientID) == TEAM_FLOCK
 			|| m_Core.Team(ClientID) == TEAM_SUPER)
 	{
 		CPlayer* pPlayer = GetPlayer(ClientID);
 		if (pPlayer && pPlayer->IsPlaying())
-			OnFinish(pPlayer);
+			OnFinish(pPlayer, FractionOfTick);
 	}
 	else
 	{
 		m_TeeFinished[ClientID] = true;
 
-		CheckTeamFinished(m_Core.Team(ClientID));
+		CheckTeamFinished(m_Core.Team(ClientID), FractionOfTick);
 	}
 }
 
-void CGameTeams::CheckTeamFinished(int Team)
+void CGameTeams::CheckTeamFinished(int Team, float FractionOfTick)
 {
 	if (TeamFinished(Team))
 	{
@@ -160,7 +142,7 @@ void CGameTeams::CheckTeamFinished(int Team)
 				CPlayer* pPlayer = GetPlayer(i);
 				if (pPlayer && pPlayer->IsPlaying())
 				{
-					OnFinish(pPlayer);
+					OnFinish(pPlayer, FractionOfTick);
 					m_TeeFinished[i] = false;
 
 					TeamPlayers[PlayersCount++] = pPlayer;
@@ -476,20 +458,23 @@ void CGameTeams::OnTeamFinish(CPlayer** Players, unsigned int Size)
 		GameServer()->Score()->SaveTeamScore(PlayerCIDs, Size, Time);
 }
 
-void CGameTeams::OnFinish(CPlayer* Player)
+void CGameTeams::OnFinish(CPlayer* Player, float FractionOfTick)
 {
 	if (!Player || !Player->IsPlaying())
 		return;
+    CCharacter* pChar = Player->GetCharacter();
+        if (!pChar)
+            return;
 	//TODO:DDRace:btd: this ugly
-	float Time = (float)(Server()->Tick() - GetStartTime(Player))
-			/ ((float)Server()->TickSpeed());
+	float Time = round_to_int(((float)(Server()->Tick()-1.0f+FractionOfTick - pChar->m_StartTime)
+    			/ ((float)Server()->TickSpeed()))*1000.f)/1000.f;
 	if (Time < 0.000001f)
 		return;
 	CPlayerData *pData = GameServer()->Score()->PlayerData(Player->GetCID());
 	char aBuf[128];
 	SetCpActive(Player, -2);
 	str_format(aBuf, sizeof(aBuf),
-			"%s finished in: %d minute(s) %5.2f second(s)",
+			"'%s' finished in %02d:%06.3f",
 			Server()->ClientName(Player->GetCID()), (int)Time / 60,
 			Time - ((int)Time / 60 * 60));
 	if (g_Config.m_SvHideScore || !g_Config.m_SvSaveWorseScores)
@@ -508,31 +493,25 @@ void CGameTeams::OnFinish(CPlayer* Player)
 			str_format(aBuf, sizeof(aBuf), "New record: %d minute(s) %5.2f second(s) better.",
 					(int)Diff / 60, Diff - ((int)Diff / 60 * 60));
 		else
-			str_format(aBuf, sizeof(aBuf), "New record: %5.2f second(s) better.",
-					Diff);
-		if (g_Config.m_SvHideScore || !g_Config.m_SvSaveWorseScores)
+		{
+            	str_format(aBuf, sizeof(aBuf), "New record, %02d:%06.3f better",
+            					(int)Diff / 60, Diff - ((int)Diff / 60 * 60));
 			GameServer()->SendChatTarget(Player->GetCID(), aBuf);
-		else
-			GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
+	    }
 	}
 	else if (pData->m_BestTime != 0) // tee has already finished?
 	{
 		Server()->StopRecord(Player->GetCID());
 
-		if (Diff <= 0.005)
+		if (Diff < 0.0005)
 		{
 			GameServer()->SendChatTarget(Player->GetCID(),
-					"You finished with your best time.");
+					"You finished with your best time");
 		}
 		else
 		{
-			if (Diff >= 60)
-				str_format(aBuf, sizeof(aBuf), "%d minute(s) %5.2f second(s) worse, better luck next time.",
-						(int)Diff / 60, Diff - ((int)Diff / 60 * 60));
-			else
-				str_format(aBuf, sizeof(aBuf),
-						"%5.2f second(s) worse, better luck next time.",
-						Diff);
+			str_format(aBuf, sizeof(aBuf), "%02d:%06.3f worse, better luck next time",
+            					(int)Diff / 60, Diff - ((int)Diff / 60 * 60));
 			GameServer()->SendChatTarget(Player->GetCID(), aBuf); //this is private, sent only to the tee
 		}
 	}
@@ -608,14 +587,14 @@ void CGameTeams::OnFinish(CPlayer* Player)
 	if (Player->m_ClientVersion >= VERSION_DDRACE)
 	{
 		CNetMsg_Sv_DDRaceTime Msg;
-		Msg.m_Time = (int)(Time * 100.0f);
+		Msg.m_Time = round_to_int(Time * 100.0);
 		Msg.m_Check = 0;
 		Msg.m_Finish = 1;
 
 		if (pData->m_BestTime)
 		{
 			float Diff = (Time - pData->m_BestTime) * 100;
-			Msg.m_Check = (int)Diff;
+			Msg.m_Check = round_to_int(Diff);
 		}
 
 		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, Player->GetCID());
@@ -647,7 +626,7 @@ void CGameTeams::OnCharacterDeath(int ClientID, int Weapon)
 	if(!Locked)
 	{
 		SetForceCharacterTeam(ClientID, 0);
-		CheckTeamFinished(Team);
+		//CheckTeamFinished(Team);
 	}
 	else
 	{
