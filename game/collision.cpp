@@ -104,9 +104,7 @@ void CCollision::Init(class CLayers *pLayers)
 
 			if(Index <= TILE_NPH_START)
 			{
-				if((Index >= TILE_JUMP && Index <= TILE_BONUS)
-						|| Index == TILE_ALLOW_TELE_GUN
-						|| Index == TILE_ALLOW_BLUE_TELE_GUN)
+				if(Index >= TILE_JUMP && Index <= TILE_BONUS)
 					m_pSwitch[i].m_Type = Index;
 				else
 					m_pSwitch[i].m_Type = 0;
@@ -755,9 +753,9 @@ int CCollision::GetMapIndex(vec2 Pos)
 		return -1;
 }
 
-std::list<int> CCollision::GetMapIndices(vec2 PrevPos, vec2 Pos, unsigned MaxIndices)
+std::list< std::pair<int, float> > CCollision::GetMapIndices(vec2 PrevPos, vec2 Pos, unsigned MaxIndices)
 {
-	std::list< int > Indices;
+	std::list< std::pair<int, float> > Indices;
 	float d = distance(PrevPos, Pos);
 	int End(d + 1);
 	if(!d)
@@ -768,7 +766,7 @@ std::list<int> CCollision::GetMapIndices(vec2 PrevPos, vec2 Pos, unsigned MaxInd
 
 		if(TileExists(Index))
 		{
-			Indices.push_back(Index);
+			Indices.push_back(std::make_pair(Index, 0.0f));
 			return Indices;
 		}
 		else
@@ -792,7 +790,7 @@ std::list<int> CCollision::GetMapIndices(vec2 PrevPos, vec2 Pos, unsigned MaxInd
 			{
 				if(MaxIndices && Indices.size() > MaxIndices)
 					return Indices;
-				Indices.push_back(Index);
+				Indices.push_back(std::make_pair(Index, a));
 				LastIndex = Index;
 			}
 		}

@@ -52,9 +52,7 @@ float HermiteBasis1(float v)
 
 float VelocityRamp(float Value, float Start, float Range, float Curvature)
 {
-	//if(Value < Start)
-		//return 1.0f;
-	return 1.0f/powf(Curvature, (Value-Start)/Range);
+	return 1.0f;
 }
 
 void CCharacterCore::Init(CWorldCore *pWorld, CCollision *pCollision, CTeamsCore *pTeams)
