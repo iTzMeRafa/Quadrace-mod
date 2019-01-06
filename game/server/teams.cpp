@@ -471,16 +471,26 @@ void CGameTeams::OnFinish(CPlayer* Player, float FractionOfTick)
 	if (Time < 0.000001f)
 		return;
 	CPlayerData *pData = GameServer()->Score()->PlayerData(Player->GetCID());
-	char aBuf[128];
+	char aBuf[1024];
 	SetCpActive(Player, -2);
-	str_format(aBuf, sizeof(aBuf),
-			"'%s' finished in %02d:%06.3f",
-			Server()->ClientName(Player->GetCID()), (int)Time / 60,
-			Time - ((int)Time / 60 * 60));
-	if (g_Config.m_SvHideScore)
-		GameServer()->SendChatTarget(Player->GetCID(), aBuf);
-	else
-		GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
+	str_format(aBuf, 128,
+			"%s finished in: %02d:%06.3f",
+			Server()->ClientName(Player->GetCID()),
+			(int)Time / 60, Time - ((int)Time / 60 * 60));
+	for (int i = 0; i < MAX_CLIENTS; i++)
+		if (i != Player->GetCID() && GameServer()->m_apPlayers[i] && !GameServer()->m_apPlayers[i]->m_DND)
+			GameServer()->SendChatTarget(i, aBuf);
+	int GhostTimeStartLength = str_length(Server()->ClientName(Player->GetCID())) + 13;
+	for (int i = 0; i < 256-GhostTimeStartLength; i++)
+		aBuf[GhostTimeStartLength+i] = ' ';
+	str_format(aBuf+256, 256,
+			"%d minute(s) %.3f second(s)",
+			(int)Time / 60, Time - ((int)Time / 60 * 60));
+	GameServer()->SendChatTarget(Player->GetCID(), aBuf);
+	str_format(aBuf, 128,
+			"%02d:%06.3f",
+			(int)Time / 60, Time - ((int)Time / 60 * 60));
+	GameServer()->SendChatTarget(Player->GetCID(), aBuf);
 
 	float Diff = fabs(Time - pData->m_BestTime);
 
@@ -512,7 +522,7 @@ void CGameTeams::OnFinish(CPlayer* Player, float FractionOfTick)
 		}
 		else
 		{
-			str_format(aBuf, sizeof(aBuf), "%02d:%06.3f worse, better luck next time",
+			str_format(aBuf, sizeof(aBuf), "You finished %02d:%06.3f worse",
 					(int)Diff / 60, Diff - ((int)Diff / 60 * 60));
 			GameServer()->SendChatTarget(Player->GetCID(), aBuf); //this is private, sent only to the tee
 		}
@@ -537,7 +547,7 @@ void CGameTeams::OnFinish(CPlayer* Player, float FractionOfTick)
 	if (CallSaveScore)
 		if (g_Config.m_SvNamelessScore || !str_startswith(Server()->ClientName(Player->GetCID()), "nameless tee"))
 			GameServer()->Score()->SaveScore(Player->GetCID(), Time,
-					GetCpCurrent(Player));
+					GetCpCurrent(Player), GameServer()->m_pController->m_CurrentRecord);
 
 	bool NeedToSendNewRecord = false;
 	// update server best time
@@ -550,6 +560,10 @@ void CGameTeams::OnFinish(CPlayer* Player, float FractionOfTick)
 			GameServer()->m_pController->m_CurrentRecord = Time;
 			//dbg_msg("character", "Finish");
 			NeedToSendNewRecord = true;
+
+			str_copy(GameServer()->m_pController->m_CurrentRecordHolder, Server()->ClientName(Player->GetCID()), sizeof(IGameController::m_CurrentRecordHolder));
+			GameServer()->m_pController->UpdateRecordFlag();
+			GameServer()->Score()->InsertRecordQueue(Server()->ClientName(Player->GetCID()), Time);
 		}
 	}
 
@@ -586,7 +600,7 @@ void CGameTeams::OnFinish(CPlayer* Player, float FractionOfTick)
 		}
 	}
 
-	if (Player->m_ClientVersion >= VERSION_DDRACE)
+	/*if (Player->m_ClientVersion >= VERSION_DDRACE)
 	{
 		CNetMsg_Sv_DDRaceTime Msg;
 		Msg.m_Time = round_to_int(Time * 100.0f);
@@ -600,7 +614,7 @@ void CGameTeams::OnFinish(CPlayer* Player, float FractionOfTick)
 		}
 
 		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, Player->GetCID());
-	}
+	}*/
 
 	int TTime = 0 - (int)Time;
 	if (Player->m_Score < TTime || !Player->m_HasFinishScore)

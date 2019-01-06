@@ -50,8 +50,6 @@ void Run(unsigned short Port, NETADDR Dest)
 	char aBuffer[1024*2];
 	int ID = 0;
 	int Delaycounter = 0;
-	MMSGS m;
-	net_init_mmsgs(&m);
 
 	while(1)
 	{
@@ -69,8 +67,7 @@ void Run(unsigned short Port, NETADDR Dest)
 			// fetch data
 			int DataTrash = 0;
 			NETADDR From;
-			unsigned char *pData;
-			int Bytes = net_udp_recv(Socket, &From, aBuffer, 1024*2, &m, &pData);
+			int Bytes = net_udp_recv(Socket, &From, aBuffer, 1024*2);
 			if(Bytes <= 0)
 				break;
 
@@ -108,7 +105,7 @@ void Run(unsigned short Port, NETADDR Dest)
 			p->m_Timestamp = time_get();
 			p->m_DataSize = Bytes;
 			p->m_ID = ID++;
-			mem_copy(p->m_aData, pData, Bytes);
+			mem_copy(p->m_aData, aBuffer, Bytes);
 
 			if(ID > 20 && Bytes > 6 && DataTrash)
 			{
@@ -205,7 +202,7 @@ void Run(unsigned short Port, NETADDR Dest)
 			}
 		}
 
-		thread_sleep(1000);
+		thread_sleep(1);
 	}
 }
 

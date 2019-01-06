@@ -69,6 +69,7 @@ void CPlayer::Reset()
 	m_LastWhisperTo = -1;
 	m_LastSetSpectatorMode = 0;
 	m_TimeoutCode[0] = '\0';
+	m_ModhelpTick = -1;
 
 	m_TuneZone = 0;
 	m_TuneZoneOld = m_TuneZone;
@@ -77,7 +78,7 @@ void CPlayer::Reset()
 
 	m_SendVoteIndex = -1;
 
-	if(g_Config.m_Events)
+	if (g_Config.m_SvEvents)
 	{
 		time_t rawtime;
 		struct tm* timeinfo;
@@ -106,6 +107,9 @@ void CPlayer::Reset()
 	m_ShowAll = g_Config.m_SvShowAllDefault;
 	m_SpecTeam = 0;
 	m_NinjaJetpack = false;
+	m_ShowFlag = true;
+	m_FastcapSpawnAt = 1;
+	m_LastDeathWeapon = 0;
 
 	m_Paused = PAUSE_NONE;
 	m_DND = false;
@@ -126,14 +130,11 @@ void CPlayer::Reset()
 	// non-empty, allow them to vote immediately. This allows players to
 	// vote after map changes or when they join an empty server.
 	//
-	// Otherwise, block voting in the begnning after joining.
+	// Otherwise, block voting for 60 seconds after joining.
 	if(Now > GameServer()->m_NonEmptySince + 10 * TickSpeed)
 		m_FirstVoteTick = Now + g_Config.m_SvJoinVoteDelay * TickSpeed;
 	else
 		m_FirstVoteTick = Now;
-
-	m_NotEligibleForFinish = false;
-	m_EligibleForFinishCheck = 0;
 }
 
 void CPlayer::Tick()
@@ -328,6 +329,32 @@ void CPlayer::Snap(int SnappingClient)
 		pPlayerInfo->m_Score = -9999;
 	else
 		pPlayerInfo->m_Score = abs(m_Score) * -1;
+
+	if(m_Team != TEAM_SPECTATORS && GameServer()->m_apPlayers[SnappingClient] && GameServer()->m_apPlayers[SnappingClient]->GetCharacter() && GameServer()->m_apPlayers[SnappingClient]->GetCharacter()->m_ShowTimesInNames)
+	{
+		CPlayerData *pData = GameServer()->Score()->PlayerData(GetCID());
+		if(pData->m_BestTime)
+		{
+			char aBuf[16];
+			str_format(aBuf, sizeof(aBuf),
+					"%02d:%06.3f ",
+					(int)pData->m_BestTime / 60, pData->m_BestTime - ((int)pData->m_BestTime / 60 * 60));
+			const char *Name = Server()->ClientName(m_ClientID);
+			int LastStart = 0;
+			for(int i = 0; i < 6; i++)
+			{
+				aBuf[10+i] = Name[i];
+				if(str_utf8_isstart(Name[i]))
+					LastStart = i;
+				if(!Name[i])
+					break;
+			}
+			aBuf[10+LastStart] = 0;
+			StrToInts(&pClientInfo->m_Name0, 4, aBuf);
+		}
+		GameServer()->SortPlayerScores();
+		pPlayerInfo->m_Score = m_SortedScore;
+	}
 }
 
 void CPlayer::FakeSnap()
@@ -427,14 +454,11 @@ void CPlayer::OnDirectInput(CNetObj_PlayerInput *NewInput)
 		return; // we must return if kicked, as player struct is already deleted
 	AfkVoteTimer(NewInput);
 
-	if(((!m_pCharacter && m_Team == TEAM_SPECTATORS) || m_Paused) && m_SpectatorID == SPEC_FREEVIEW)
-		m_ViewPos = vec2(NewInput->m_TargetX, NewInput->m_TargetY);
-
 	if(NewInput->m_PlayerFlags&PLAYERFLAG_CHATTING)
 	{
 	// skip the input if chat is active
 		if(m_PlayerFlags&PLAYERFLAG_CHATTING)
-			return;
+		return;
 
 		// reset input
 		if(m_pCharacter)
@@ -456,6 +480,9 @@ void CPlayer::OnDirectInput(CNetObj_PlayerInput *NewInput)
 
 	if(!m_pCharacter && m_Team != TEAM_SPECTATORS && (NewInput->m_Fire&1))
 		m_Spawning = true;
+
+	if(((!m_pCharacter && m_Team == TEAM_SPECTATORS) || m_Paused) && m_SpectatorID == SPEC_FREEVIEW)
+		m_ViewPos = vec2(NewInput->m_TargetX, NewInput->m_TargetY);
 
 	// check for activity
 	if(NewInput->m_Direction || m_LatestActivity.m_TargetX != NewInput->m_TargetX ||
@@ -511,12 +538,12 @@ CCharacter* CPlayer::ForceSpawn(vec2 Pos)
 
 void CPlayer::SetTeam(int Team, bool DoChatMsg)
 {
+	// clamp the team
 	Team = GameServer()->m_pController->ClampTeam(Team);
 	if(m_Team == Team)
 		return;
 
 	char aBuf[512];
-	DoChatMsg = false;
 	if(DoChatMsg)
 	{
 		str_format(aBuf, sizeof(aBuf), "'%s' joined the %s", Server()->ClientName(m_ClientID), GameServer()->m_pController->GetTeamName(Team));
@@ -555,7 +582,7 @@ void CPlayer::TryRespawn()
 {
 	vec2 SpawnPos;
 
-	if(!GameServer()->m_pController->CanSpawn(m_Team, &SpawnPos))
+	if(!GameServer()->m_pController->CanSpawn(m_Team, g_Config.m_SvFastcap ? m_FastcapSpawnAt : 0, &SpawnPos))
 		return;
 
 	CGameControllerDDRace* Controller = (CGameControllerDDRace*)GameServer()->m_pController;

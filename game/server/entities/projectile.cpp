@@ -115,8 +115,8 @@ void CProjectile::Tick()
 	vec2 ColPos;
 	vec2 NewPos;
 	int Collide = GameServer()->Collision()->IntersectLine(PrevPos, CurPos, &ColPos, &NewPos);
-	CCharacter *pOwnerChar = 0;
 
+	CCharacter *pOwnerChar = 0;
 	if(m_Owner >= 0)
 		pOwnerChar = GameServer()->GetPlayerChar(m_Owner);
 
@@ -128,7 +128,6 @@ void CProjectile::Tick()
 	if(m_LifeSpan > -1)
 		m_LifeSpan--;
 
-	int64_t TeamMask = -1LL;
 	bool IsWeaponCollide = false;
 	if
 	(
@@ -141,15 +140,13 @@ void CProjectile::Tick()
 	{
 			IsWeaponCollide = true;
 	}
-	if (pOwnerChar && pOwnerChar->IsAlive())
-	{
-		TeamMask = pOwnerChar->Teams()->TeamMask(pOwnerChar->Team(), -1, m_Owner);
-	}
-	else if (m_Owner >= 0)
-	{
+
+	int Team = -1;
+	if(pOwnerChar && pOwnerChar->IsAlive())
+		Team = pOwnerChar->Team();
+	else if(m_Owner >= 0 && (g_Config.m_SvKillGrenades || !GameServer()->m_apPlayers[m_Owner] || GameServer()->m_apPlayers[m_Owner]->GetTeam() == TEAM_SPECTATORS))
 		GameServer()->m_World.DestroyEntity(this);
-		return;
-	}
+	int64_t TeamMask = ((CGameControllerDDRace*)GameServer()->m_pController)->m_Teams.TeamMask(Team, -1, -1);
 
 	if( ((pTargetChr && (pOwnerChar ? !(pOwnerChar->m_Hit&CCharacter::DISABLE_HIT_GRENADE) : g_Config.m_SvHit || m_Owner == -1 || pTargetChr == pOwnerChar)) || Collide || GameLayerClipped(CurPos)) && !IsWeaponCollide)
 	{
@@ -175,28 +172,10 @@ void CProjectile::Tick()
 			((m_Type == WEAPON_GRENADE && pOwnerChar->m_HasTeleGrenade) || (m_Type == WEAPON_GUN && pOwnerChar->m_HasTeleGun)))
 		{
 			int MapIndex = GameServer()->Collision()->GetPureMapIndex(pTargetChr ? pTargetChr->m_Pos : ColPos);
+			int TileIndex = GameServer()->Collision()->GetTileIndex(MapIndex);
 			int TileFIndex = GameServer()->Collision()->GetFTileIndex(MapIndex);
-			bool IsSwitchTeleGun = GameServer()->Collision()->IsSwitch(MapIndex) == TILE_ALLOW_TELE_GUN;
-			bool IsBlueSwitchTeleGun = GameServer()->Collision()->IsSwitch(MapIndex) == TILE_ALLOW_BLUE_TELE_GUN;
 
-			if(IsSwitchTeleGun || IsBlueSwitchTeleGun) {
-				// Delay specifies which weapon the tile should work for.
-				// Delay = 0 means all.
-				int delay = GameServer()->Collision()->GetSwitchDelay(MapIndex);
-
-				if(delay == 1 && m_Type != WEAPON_GUN)
-					IsSwitchTeleGun = IsBlueSwitchTeleGun = false;
-				if(delay == 2 && m_Type != WEAPON_GRENADE)
-					IsSwitchTeleGun = IsBlueSwitchTeleGun = false;
-				if(delay == 3 && m_Type != WEAPON_RIFLE)
-					IsSwitchTeleGun = IsBlueSwitchTeleGun = false;
-			}
-
-			if (TileFIndex == TILE_ALLOW_TELE_GUN
-				|| TileFIndex == TILE_ALLOW_BLUE_TELE_GUN
-				|| IsSwitchTeleGun
-				|| IsBlueSwitchTeleGun
-				|| pTargetChr)
+			if (TileIndex != TILE_NO_TELE_GUN && TileFIndex != TILE_NO_TELE_GUN)
 			{
 				bool Found;
 				vec2 PossiblePos;
@@ -210,7 +189,6 @@ void CProjectile::Tick()
 				{
 					pOwnerChar->m_TeleGunPos = PossiblePos;
 					pOwnerChar->m_TeleGunTeleport = true;
-					pOwnerChar->m_IsBlueTeleGunTeleport = TileFIndex == TILE_ALLOW_BLUE_TELE_GUN || IsBlueSwitchTeleGun;
 				}
 			}
 		}
@@ -248,14 +226,14 @@ void CProjectile::Tick()
 	{
 		if(m_Explosive)
 		{
-			if(m_Owner >= 0)
+			/*if(m_Owner >= 0)
 				pOwnerChar = GameServer()->GetPlayerChar(m_Owner);
 
 			int64_t TeamMask = -1LL;
 			if (pOwnerChar && pOwnerChar->IsAlive())
 			{
 					TeamMask = pOwnerChar->Teams()->TeamMask(pOwnerChar->Team(), -1, m_Owner);
-			}
+			}*/
 
 			GameServer()->CreateExplosion(ColPos, m_Owner, m_Weapon, m_Owner == -1, (!pOwnerChar ? -1 : pOwnerChar->Team()),
 			(m_Owner != -1)? TeamMask : -1LL);
@@ -308,13 +286,12 @@ void CProjectile::Snap(int SnappingClient)
 		return;
 
 	CCharacter *pOwnerChar = 0;
-	int64_t TeamMask = -1LL;
-
 	if(m_Owner >= 0)
 		pOwnerChar = GameServer()->GetPlayerChar(m_Owner);
-
-	if (pOwnerChar && pOwnerChar->IsAlive())
-			TeamMask = pOwnerChar->Teams()->TeamMask(pOwnerChar->Team(), -1, m_Owner);
+	int Team = -1;
+	if(pOwnerChar && pOwnerChar->IsAlive())
+		Team = pOwnerChar->Team();
+	int64_t TeamMask = ((CGameControllerDDRace*)GameServer()->m_pController)->m_Teams.TeamMask(Team, -1, -1);
 
 	if(m_Owner != -1 && !CmaskIsSet(TeamMask, SnappingClient))
 		return;

@@ -67,7 +67,7 @@ public:
 	virtual void MapInfo(int ClientID, const char* MapName);
 	virtual void MapVote(int ClientID, const char* MapName);
 	virtual void SaveScore(int ClientID, float Time,
-			float CpTime[NUM_CHECKPOINTS], bool NotEligible);
+			float CpTime[NUM_CHECKPOINTS], float CurrentRecord);
 	virtual void SaveTeamScore(int* ClientIDs, unsigned int Size, float Time);
 
 	virtual void ShowTop5(IConsole::IResult *pResult, int ClientID,
@@ -84,6 +84,9 @@ public:
 	virtual void RandomUnfinishedMap(int ClientID, int stars);
 	virtual void SaveTeam(int Team, const char* Code, int ClientID, const char* Server);
 	virtual void LoadTeam(const char* Code, int ClientID);
+	virtual void ProcessRecordQueue() {};
+	virtual void InsertRecordQueue(const char *PlayerName, float Time) {};
+	virtual void ShowMapPoints(int ClientID, const char* pName) {};
 
 	virtual void OnShutdown();
 };

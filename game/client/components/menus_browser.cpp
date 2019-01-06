@@ -243,7 +243,7 @@ void CMenus::RenderServerbrowserServerList(CUIRect View)
 	{
 		int ItemIndex = i;
 		const CServerInfo *pItem = ServerBrowser()->SortedGet(ItemIndex);
-		NumPlayers += pItem->m_NumFilteredPlayers;
+		NumPlayers += ServerBrowser()->FilteredPlayers(*pItem);
 		CUIRect Row;
 		CUIRect SelectHitBox;
 
@@ -407,7 +407,7 @@ void CMenus::RenderServerbrowserServerList(CUIRect View)
 					DoButton_Icon(IMAGE_BROWSEICONS, SPRITE_BROWSE_HEART, &Icon);
 				}
 
-				str_format(aTemp, sizeof(aTemp), "%i/%i", pItem->m_NumFilteredPlayers, ServerBrowser()->Max(*pItem));
+				str_format(aTemp, sizeof(aTemp), "%i/%i", ServerBrowser()->FilteredPlayers(*pItem), ServerBrowser()->Max(*pItem));
 				if(g_Config.m_BrFilterString[0] && (pItem->m_QuickSearchHit&IServerBrowser::QUICK_PLAYER))
 					TextRender()->TextColor(0.4f,0.4f,1.0f,1);
 				UI()->DoLabelScaled(&Button, aTemp, 12.0f, 1);
@@ -1296,7 +1296,7 @@ void CMenus::RenderServerbrowser(CUIRect MainView)
 		StatusBox.HSplitTop(5.0f, 0, &StatusBox);
 
 		// version note
-#if defined(CONF_AUTOUPDATE)
+#if defined(CONF_FAMILY_WINDOWS) || (defined(CONF_PLATFORM_LINUX) && !defined(__ANDROID__))
 		CUIRect Part;
 		StatusBox.HSplitBottom(15.0f, &StatusBox, &Button);
 		char aBuf[64];

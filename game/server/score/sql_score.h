@@ -101,17 +101,16 @@ struct CSqlScoreData : CSqlData
 
 	sqlstr::CSqlString<MAX_NAME_LENGTH> m_Name;
 
-	bool m_NotEligible;
 	float m_Time;
 	float m_aCpCurrent[NUM_CHECKPOINTS];
 	int m_Num;
 	bool m_Search;
 	char m_aRequestingPlayer [MAX_NAME_LENGTH];
+	float m_CurrentRecord;
 };
 
 struct CSqlTeamScoreData : CSqlData
 {
-	bool m_NotEligible;
 	unsigned int m_Size;
 	int m_aClientIDs[MAX_CLIENTS];
 	sqlstr::CSqlString<MAX_NAME_LENGTH> m_aNames [MAX_CLIENTS];
@@ -169,6 +168,9 @@ class CSqlScore: public IScore
 	static bool RandomUnfinishedMapThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
 	static bool SaveTeamThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
 	static bool LoadTeamThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
+	static bool ProcessRecordQueueThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
+	static bool InsertRecordQueueThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
+	static bool ShowMapPointsThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
 
 public:
 
@@ -180,7 +182,7 @@ public:
 	virtual void MapInfo(int ClientID, const char* MapName);
 	virtual void MapVote(int ClientID, const char* MapName);
 	virtual void SaveScore(int ClientID, float Time,
-			float CpTime[NUM_CHECKPOINTS], bool NotEligible);
+			float CpTime[NUM_CHECKPOINTS], float CurrentRecord);
 	virtual void SaveTeamScore(int* aClientIDs, unsigned int Size, float Time);
 	virtual void ShowRank(int ClientID, const char* pName, bool Search = false);
 	virtual void ShowTeamRank(int ClientID, const char* pName, bool Search = false);
@@ -197,6 +199,9 @@ public:
 	virtual void RandomUnfinishedMap(int ClientID, int stars);
 	virtual void SaveTeam(int Team, const char* Code, int ClientID, const char* Server);
 	virtual void LoadTeam(const char* Code, int ClientID);
+	virtual void ProcessRecordQueue();
+	virtual void InsertRecordQueue(const char *PlayerName, float Time);
+	virtual void ShowMapPoints(int ClientID, const char* pName);
 
 	virtual void OnShutdown();
 };

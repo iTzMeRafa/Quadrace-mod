@@ -60,6 +60,8 @@ void CGameContext::Construct(int Resetting)
 	m_ChatResponseTargetID = -1;
 	m_aDeleteTempfile[0] = 0;
 	m_TeeHistorianActive = false;
+	m_SortPlayerScoresTick = -1;
+	m_LastProcessQueue = 0;
 }
 
 CGameContext::CGameContext(int Resetting)
@@ -952,6 +954,12 @@ void CGameContext::OnTick()
 		}
 	}
 #endif
+
+	if(m_LastProcessQueue < time_get()-time_freq())
+	{
+		m_LastProcessQueue = time_get();
+		Score()->ProcessRecordQueue();
+	}
 }
 
 // Server hooks
@@ -1077,9 +1085,6 @@ void CGameContext::OnClientEnter(int ClientID)
 		str_format(aBuf, sizeof(aBuf), "'%s' entered and joined the %s", Server()->ClientName(ClientID), m_pController->GetTeamName(m_apPlayers[ClientID]->GetTeam()));
 		SendChat(-1, CGameContext::CHAT_ALL, aBuf);
 
-		SendChatTarget(ClientID, "DDraceNetwork Mod. Version: " GAME_VERSION);
-		SendChatTarget(ClientID, "please visit DDNet.tw or say /info for more info");
-
 		if(g_Config.m_SvWelcome[0]!=0)
 			SendChatTarget(ClientID,g_Config.m_SvWelcome);
 		str_format(aBuf, sizeof(aBuf), "team_join player='%d:%s' team=%d", ClientID, Server()->ClientName(ClientID), m_apPlayers[ClientID]->GetTeam());
@@ -1088,9 +1093,6 @@ void CGameContext::OnClientEnter(int ClientID)
 
 		if (g_Config.m_SvShowOthersDefault)
 		{
-			if (g_Config.m_SvShowOthers)
-				SendChatTarget(ClientID, "You can see other players. To disable this use DDNet client and type /showothers .");
-
 			m_apPlayers[ClientID]->m_ShowOthers = true;
 		}
 	}
@@ -1838,6 +1840,8 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				Score()->LoadScore(ClientID);
 				Score()->PlayerData(ClientID)->m_CurrentTime = Score()->PlayerData(ClientID)->m_BestTime;
 				m_apPlayers[ClientID]->m_Score = (Score()->PlayerData(ClientID)->m_BestTime)?Score()->PlayerData(ClientID)->m_BestTime:-9999;
+
+				m_pController->UpdateRecordFlag();
 			}
 			Server()->SetClientClan(ClientID, pMsg->m_pClan);
 			Server()->SetClientCountry(ClientID, pMsg->m_Country);
@@ -1903,7 +1907,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				SendChatTarget(ClientID, "You are running a vote please try again after the vote is done!");
 				return;
 			}
-			if(pPlayer->m_LastKill && pPlayer->m_LastKill+Server()->TickSpeed()*g_Config.m_SvKillDelay > Server()->Tick())
+			if(pPlayer->m_LastKill && pPlayer->m_LastKill+Server()->TickSpeed()/2 > Server()->Tick())
 				return;
 			if(pPlayer->IsPaused())
 				return;
@@ -2613,12 +2617,31 @@ void CGameContext::OnConsoleInit()
 	#include "ddracechat.h"
 }
 
-void CGameContext::OnInit(/*class IKernel *pKernel*/)
+void CGameContext::OnInit(bool FirstInit)
 {
 	m_pServer = Kernel()->RequestInterface<IServer>();
 	m_pConsole = Kernel()->RequestInterface<IConsole>();
 	m_pEngine = Kernel()->RequestInterface<IEngine>();
 	m_pStorage = Kernel()->RequestInterface<IStorage>();
+
+	m_pController = new CGameControllerDDRace(this);
+
+	// delete old score object
+	if(m_pScore)
+		delete m_pScore;
+
+	// create score object (add sql later)
+#if defined(CONF_SQL)
+	if(g_Config.m_SvUseSQL) {
+		m_pScore = new CSqlScore(this);
+		if(FirstInit)
+			m_pScore->RandomMap(-2, 0);
+	} else
+#endif
+		m_pScore = new CFileScore(this);
+	if(FirstInit)
+		return;
+
 	m_World.SetGameServer(this);
 	m_Events.SetGameServer(this);
 
@@ -2698,11 +2721,12 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	Console()->ExecuteFile(g_Config.m_SvResetFile, -1);
 
 	LoadMapSettings();
+	((CGameControllerDDRace*)m_pController)->SetGameType();
 
 	m_MapBugs.Dump();
 
-	m_pController = new CGameControllerDDRace(this);
 	((CGameControllerDDRace*)m_pController)->m_Teams.Reset();
+	((CGameControllerDDRace*)m_pController)->InitTeleporter();
 
 	m_TeeHistorianActive = g_Config.m_SvTeeHistorian;
 	if(m_TeeHistorianActive)
@@ -2780,17 +2804,6 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 		}
 	}
 
-	// delete old score object
-	if(m_pScore)
-		delete m_pScore;
-
-	// create score object (add sql later)
-#if defined(CONF_SQL)
-	if(g_Config.m_SvUseSQL)
-		m_pScore = new CSqlScore(this);
-	else
-#endif
-		m_pScore = new CFileScore(this);
 	// setup core world
 	//for(int i = 0; i < MAX_CLIENTS; i++)
 	//	game.players[i].core.world = &game.world.core;
@@ -3568,14 +3581,63 @@ void CGameContext::ForceVote(int EnforcerID, bool Success)
 	// check if there is a vote running
 	if(!m_VoteCloseTime)
 		return;
-
+	
 	m_VoteEnforce = Success ? CGameContext::VOTE_ENFORCE_YES_ADMIN : CGameContext::VOTE_ENFORCE_NO_ADMIN;
 	m_VoteEnforcer = EnforcerID;
-
+	
 	char aBuf[256];
 	const char *pOption = Success ? "yes" : "no";
 	str_format(aBuf, sizeof(aBuf), "authorized player forced vote %s", pOption);
 	SendChatTarget(-1, aBuf);
 	str_format(aBuf, sizeof(aBuf), "forcing vote %s", pOption);
 	Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+}
+
+void CGameContext::SortPlayerScores()
+{
+	if(m_SortPlayerScoresTick == Server()->Tick())
+		return;
+
+	CPlayer *PlayersSorted[MAX_CLIENTS];
+	mem_copy(PlayersSorted, m_apPlayers, sizeof(PlayersSorted));
+
+	// sort players by name
+	for(int k = 0; k < MAX_CLIENTS-1; k++) // ffs, bubblesort
+	{
+		for(int i = 0; i < MAX_CLIENTS-k-1; i++)
+		{
+			if(PlayersSorted[i+1] && (!PlayersSorted[i] || str_comp_nocase(Server()->ClientName(PlayersSorted[i]->GetCID()), Server()->ClientName(PlayersSorted[i+1]->GetCID())) > 0))
+			{
+				CPlayer *pTmp = PlayersSorted[i];
+				PlayersSorted[i] = PlayersSorted[i+1];
+				PlayersSorted[i+1] = pTmp;
+			}
+		}
+	}
+
+	// sort players by score
+	for(int k = 0; k < MAX_CLIENTS-1; k++) // ffs, bubblesort
+	{
+		for(int i = 0; i < MAX_CLIENTS-k-1; i++)
+		{
+			if(PlayersSorted[i+1] && (!PlayersSorted[i] || PlayersSorted[i]->m_Score < PlayersSorted[i+1]->m_Score))
+			{
+				CPlayer *pTmp = PlayersSorted[i];
+				PlayersSorted[i] = PlayersSorted[i+1];
+				PlayersSorted[i+1] = pTmp;
+			}
+		}
+	}
+
+	int Score = 0;
+	for(int i = 0; i < MAX_CLIENTS; i++)
+	{
+		if(PlayersSorted[i] && PlayersSorted[i]->GetTeam() != TEAM_SPECTATORS)
+		{
+			Score -= 60;
+			PlayersSorted[i]->m_SortedScore = Score;
+		}
+	}
+
+	m_SortPlayerScoresTick = Server()->Tick();
 }

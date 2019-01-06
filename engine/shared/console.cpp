@@ -375,7 +375,7 @@ void CConsole::ExecuteLineStroked(int Stroke, const char *pStr, int ClientID, bo
 					Print(OUTPUT_LEVEL_STANDARD, "console", aBuf);
 				}
 			}
-			else if(ClientID == IConsole::CLIENT_ID_NO_GAME
+			/*else if(ClientID == IConsole::CLIENT_ID_NO_GAME
 				&& pCommand->m_Flags & CFGFLAG_GAME)
 			{
 				if(Stroke)
@@ -386,7 +386,7 @@ void CConsole::ExecuteLineStroked(int Stroke, const char *pStr, int ClientID, bo
 					str_format(aBuf, sizeof(aBuf), "Hint: Put the command in '%s.cfg' instead of '%s.map.cfg' ", g_Config.m_SvMap, g_Config.m_SvMap);
 					Print(OUTPUT_LEVEL_STANDARD, "console", aBuf);
 				}
-			}
+			}*/
 			else if(pCommand->GetAccessLevel() >= m_AccessLevel)
 			{
 				int IsStrokeCommand = 0;

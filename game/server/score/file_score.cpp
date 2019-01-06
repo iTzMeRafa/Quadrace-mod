@@ -86,7 +86,7 @@ void CFileScore::SaveScoreThread(void *pUser)
 			}
 			t++;
 			if (t % 50 == 0)
-				thread_sleep(1000);
+				thread_sleep(1);
 		}
 	}
 	f.close();
@@ -231,7 +231,7 @@ void CFileScore::SaveTeamScore(int* ClientIDs, unsigned int Size, float Time)
 }
 
 void CFileScore::SaveScore(int ClientID, float Time,
-		float CpTime[NUM_CHECKPOINTS], bool NotEligible)
+		float CpTime[NUM_CHECKPOINTS], float CurrentRecord)
 {
 	CConsole* pCon = (CConsole*) GameServer()->Console();
 	if (!pCon->m_Cheated || g_Config.m_SvRankCheats)

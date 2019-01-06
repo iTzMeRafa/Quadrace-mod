@@ -2,12 +2,12 @@
 #define ENGINE_CLIENT_UPDATER_H
 
 #include <engine/updater.h>
-#include <engine/client/http.h>
+#include <engine/shared/http.h>
 #include <map>
 #include <string>
 
 #define CLIENT_EXEC "DDNet"
-#define SERVER_EXEC "Quadrace-Server"
+#define SERVER_EXEC "DDNet-Server"
 
 #if defined(CONF_FAMILY_WINDOWS)
 	#define PLAT_EXT ".exe"
