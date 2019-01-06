@@ -405,8 +405,8 @@ void CMenus::RenderSettingsTee(CUIRect MainView)
 	MainView.HSplitTop(20.0f, &Label, &MainView);
 	Label.VSplitLeft(280.0f, &Label, &Dummy);
 	Label.VSplitLeft(230.0f, &Label, 0);
-	Dummy.VSplitLeft(250.0f, &Dummy, &SkinPrefix);
-	SkinPrefix.VSplitLeft(150.0f, &SkinPrefix, 0);
+	Dummy.VSplitLeft(170.0f, &Dummy, &SkinPrefix);
+	SkinPrefix.VSplitLeft(120.0f, &SkinPrefix, 0);
 	char aBuf[128];
 	str_format(aBuf, sizeof(aBuf), "%s:", Localize("Your skin"));
 	UI()->DoLabelScaled(&Label, aBuf, 14.0f, -1);
@@ -632,7 +632,7 @@ void CMenus::RenderSettingsTee(CUIRect MainView)
 		QuickSearch.HSplitTop(5.0f, 0, &QuickSearch);
 		const char *pSearchLabel = "\xEE\xA2\xB6";
 		TextRender()->SetCurFont(TextRender()->GetFont(TEXT_FONT_ICON_FONT));
-		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING);
+		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
 		UI()->DoLabelScaled(&QuickSearch, pSearchLabel, 14.0f, -1);
 		float wSearch = TextRender()->TextWidth(0, 14.0f, pSearchLabel, -1);
 		TextRender()->SetRenderFlags(0);
@@ -2192,7 +2192,7 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 	}
 
 	// Updater
-#if defined(CONF_FAMILY_WINDOWS) || (defined(CONF_PLATFORM_LINUX) && !defined(__ANDROID__))
+#if defined(CONF_AUTOUPDATE)
 	{
 		Left.HSplitTop(20.0f, &Label, &Left);
 		bool NeedUpdate = str_comp(Client()->LatestVersion(), "0");

@@ -4,7 +4,6 @@
 #define GAME_SERVER_GAMECONTROLLER_H
 
 #include <base/vmath.h>
-#include <game/server/entities/flag.h>
 
 class CDoor;
 #if !defined(_MSC_VER) || _MSC_VER >= 1600
@@ -73,7 +72,7 @@ protected:
 	bool m_ForceBalanced;
 
 public:
-	char m_pGameType[16];
+	const char *m_pGameType;
 
 	//bool IsTeamplay() const;
 	//bool IsGameOver() const { return m_GameOverTick != -1; }
@@ -101,9 +100,6 @@ public:
 	virtual void Tick();
 
 	virtual void Snap(int SnappingClient);
-	int SnapRecordFlag(int SnappingClient);
-	int SnapFastcapFlag(int SnappingClient);
-	void SnapFlags(int SnappingClient);
 
 	/*
 		Function: on_entity
@@ -145,7 +141,7 @@ public:
 	//virtual void OnPlayerInfoChange(class CPlayer *pP);
 
 	//
-	virtual bool CanSpawn(int Team, int SpawnAt, vec2 *pPos);
+	virtual bool CanSpawn(int Team, vec2 *pPos);
 
 	/*
 
@@ -162,12 +158,6 @@ public:
 	// DDRace
 
 	float m_CurrentRecord;
-	char m_CurrentRecordHolder[16];
-	void UpdateRecordFlag();
-	uint32_t m_CurrentRecordQueueId;
-	CCharacter *m_pRecordFlagChar;
-	vec2 m_FastcapFlag1;
-	vec2 m_FastcapFlag2;
 };
 
 #endif

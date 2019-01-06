@@ -4,6 +4,7 @@
 #define ENGINE_SERVER_H
 
 #include <base/hash.h>
+#include <base/math.h>
 
 #include "kernel.h"
 #include "message.h"
@@ -32,6 +33,8 @@ public:
 	int TickSpeed() const { return m_TickSpeed; }
 
 	virtual int MaxClients() const = 0;
+	virtual int ClientCount() = 0;
+	virtual int DistinctClientCount() = 0;
 	virtual const char *ClientName(int ClientID) = 0;
 	virtual const char *ClientClan(int ClientID) = 0;
 	virtual int ClientCountry(int ClientID) = 0;
@@ -129,6 +132,7 @@ public:
 		GetClientInfo(Client, &Info);
 		if (Info.m_ClientVersion >= VERSION_DDNET_OLD)
 			return true;
+		Target = clamp(Target, 0, VANILLA_MAX_CLIENTS-1);
 		int *pMap = GetIdMap(Client);
 		if (pMap[Target] == -1)
 			return false;
@@ -194,7 +198,7 @@ class IGameServer : public IInterface
 	MACRO_INTERFACE("gameserver", 0)
 protected:
 public:
-	virtual void OnInit(bool FirstInit = false) = 0;
+	virtual void OnInit() = 0;
 	virtual void OnConsoleInit() = 0;
 	virtual void OnMapChange(char *pNewMapName, int MapNameSize) = 0;
 

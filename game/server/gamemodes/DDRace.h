@@ -22,6 +22,5 @@ public:
 
 	void InitTeleporter();
 	virtual void Tick();
-	void SetGameType();
 };
 #endif // GAME_SERVER_GAMEMODES_DDRACE_H

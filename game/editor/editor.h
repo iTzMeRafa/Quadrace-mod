@@ -505,6 +505,7 @@ enum
 	PROPTYPE_ENVELOPE,
 	PROPTYPE_SHIFT,
 	PROPTYPE_SOUND,
+	PROPTYPE_AUTOMAPPER,
 };
 
 typedef struct
@@ -551,6 +552,8 @@ public:
 	void PrepareForSave();
 
 	void GetSize(float *w, float *h) { *w = m_Width*32.0f; *h = m_Height*32.0f; }
+	
+	void FlagModified(int x, int y, int w, int h);
 
 	int m_TexID;
 	int m_Game;
@@ -564,6 +567,9 @@ public:
 
 	// DDRace
 
+	int m_AutoMapperConfig;
+	int m_Seed;
+	bool m_AutoAutoMap;
 	int m_Tele;
 	int m_Speedup;
 	int m_Front;
@@ -840,6 +846,7 @@ public:
 	char m_aFileDialogCurrentFolder[MAX_PATH_LENGTH];
 	char m_aFileDialogCurrentLink[MAX_PATH_LENGTH];
 	char m_aFileDialogSearchText[64];
+	char m_aFileDialogPrevSearchText[64];
 	char *m_pFileDialogPath;
 	bool m_aFileDialogActivate;
 	int m_FileDialogFileType;
@@ -858,6 +865,7 @@ public:
 		bool m_IsDir;
 		bool m_IsLink;
 		int m_StorageType;
+		bool m_IsVisible;
 
 		bool operator<(const CFilelistItem &Other) { return !str_comp(m_aFilename, "..") ? true : !str_comp(Other.m_aFilename, "..") ? false :
 														m_IsDir && !Other.m_IsDir ? true : !m_IsDir && Other.m_IsDir ? false :
@@ -991,7 +999,7 @@ public:
 	void PopupSelectGametileOpInvoke(float x, float y);
 	int PopupSelectGameTileOpResult();
 
-	void PopupSelectConfigAutoMapInvoke(float x, float y);
+	void PopupSelectConfigAutoMapInvoke(int Current, float x, float y);
 	int PopupSelectConfigAutoMapResult();
 
 	void PopupSelectSoundInvoke(int Current, float x, float y);
@@ -1015,6 +1023,8 @@ public:
 	static void ReplaceSound(const char *pFileName, int StorageType, void *pUser);
 	static void AddImage(const char *pFilename, int StorageType, void *pUser);
 	static void AddSound(const char *pFileName, int StorageType, void *pUser);
+
+	bool IsEnvelopeUsed(int EnvelopeIndex);
 
 	void RenderImages(CUIRect Toolbox, CUIRect View);
 	void RenderLayers(CUIRect Toolbox, CUIRect View);

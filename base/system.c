@@ -173,8 +173,28 @@ static void logger_file(const char *line, void *user)
 static void logger_stdout_sync(const char *line, void *user)
 {
 	(void)user;
-	puts(line);
-	fflush(stdout);
+
+	size_t length = strlen(line);
+	wchar_t *wide = malloc(length * sizeof (*wide));
+	mem_zero(wide, length * sizeof *wide);
+
+	const char *p = line;
+	int wlen = 0;
+	for(int codepoint = 0; (codepoint = str_utf8_decode(&p)); wlen++)
+	{
+		if(codepoint < 0)
+			return;
+
+		char u16[4] = {0};
+		if(str_utf16le_encode(u16, codepoint) != 2)
+			return;
+
+		mem_copy(&wide[wlen], u16, 2);
+	}
+
+	HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
+	WriteConsoleW(console, wide, wlen, NULL, NULL);
+	WriteConsoleA(console, "\n", 1, NULL, NULL);
 }
 #endif
 
@@ -732,12 +752,12 @@ void thread_yield()
 #endif
 }
 
-void thread_sleep(int milliseconds)
+void thread_sleep(int microseconds)
 {
 #if defined(CONF_FAMILY_UNIX)
-	usleep(milliseconds*1000);
+	usleep(microseconds);
 #elif defined(CONF_FAMILY_WINDOWS)
-	Sleep(milliseconds);
+	Sleep(microseconds/1000);
 #else
 	#error not implemented
 #endif
@@ -995,6 +1015,14 @@ static void sockaddr_to_netaddr(const struct sockaddr *src, NETADDR *dst)
 int net_addr_comp(const NETADDR *a, const NETADDR *b)
 {
 	return mem_comp(a, b, sizeof(NETADDR));
+}
+
+int net_addr_comp_noport(const NETADDR *a, const NETADDR *b)
+{
+	NETADDR ta = *a, tb = *b;
+	ta.port = tb.port = 0;
+
+	return net_addr_comp(&ta, &tb);
 }
 
 void net_addr_str(const NETADDR *addr, char *string, int max_length, int add_port)
@@ -1318,7 +1346,6 @@ NETSOCKET net_udp_create(NETADDR bindaddr)
 	NETSOCKET sock = invalid_socket;
 	NETADDR tmpbindaddr = bindaddr;
 	int broadcast = 1;
-	int recvsize = 65536;
 
 	if(bindaddr.type&NETTYPE_IPV4)
 	{
@@ -1336,9 +1363,6 @@ NETSOCKET net_udp_create(NETADDR bindaddr)
 
 			/* set broadcast */
 			setsockopt(socket, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast, sizeof(broadcast));
-
-			/* set receive buffer size */
-			setsockopt(socket, SOL_SOCKET, SO_RCVBUF, (char*)&recvsize, sizeof(recvsize));
 
 			{
 				/* set DSCP/TOS */
@@ -1384,9 +1408,6 @@ NETSOCKET net_udp_create(NETADDR bindaddr)
 
 			/* set broadcast */
 			setsockopt(socket, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast, sizeof(broadcast));
-
-			/* set receive buffer size */
-			setsockopt(socket, SOL_SOCKET, SO_RCVBUF, (char*)&recvsize, sizeof(recvsize));
 
 			{
 				/* set DSCP/TOS */
@@ -1494,30 +1515,85 @@ int net_udp_send(NETSOCKET sock, const NETADDR *addr, const void *data, int size
 #endif /* FUZZING */
 }
 
-int net_udp_recv(NETSOCKET sock, NETADDR *addr, void *data, int maxsize)
+void net_init_mmsgs(MMSGS* m)
+{
+#if defined(CONF_PLATFORM_LINUX)
+	int i;
+	m->pos = 0;
+	m->size = 0;
+	mem_zero(m->msgs, sizeof(m->msgs));
+	mem_zero(m->iovecs, sizeof(m->iovecs));
+	mem_zero(m->sockaddrs, sizeof(m->sockaddrs));
+	for(i = 0; i < VLEN; ++i)
+	{
+		m->iovecs[i].iov_base = m->bufs[i];
+		m->iovecs[i].iov_len = PACKETSIZE;
+		m->msgs[i].msg_hdr.msg_iov = &(m->iovecs[i]);
+		m->msgs[i].msg_hdr.msg_iovlen = 1;
+		m->msgs[i].msg_hdr.msg_name = &(m->sockaddrs[i]);
+		m->msgs[i].msg_hdr.msg_namelen = sizeof(m->sockaddrs[i]);
+	}
+#endif
+}
+
+int net_udp_recv(NETSOCKET sock, NETADDR *addr, void *buffer, int maxsize, MMSGS* m, unsigned char **data)
 {
 #ifndef FUZZING
 	char sockaddrbuf[128];
-	socklen_t fromlen;// = sizeof(sockaddrbuf);
 	int bytes = 0;
 
+#if defined(CONF_PLATFORM_LINUX)
+	if(sock.ipv4sock >= 0)
+	{
+		if(m->pos >= m->size)
+		{
+			m->size = recvmmsg(sock.ipv4sock, m->msgs, VLEN, 0, NULL);
+			m->pos = 0;
+		}
+	}
+
+	if(sock.ipv6sock >= 0)
+	{
+		if(m->pos >= m->size)
+		{
+			m->size = recvmmsg(sock.ipv6sock, m->msgs, VLEN, 0, NULL);
+			m->pos = 0;
+		}
+	}
+
+	if(m->pos < m->size)
+	{
+		sockaddr_to_netaddr((struct sockaddr *)&(m->sockaddrs[m->pos]), addr);
+		// TODO: network_stats
+		//network_stats.recv_bytes += bytes;
+		//network_stats.recv_packets++;
+		bytes = m->msgs[m->pos].msg_len;
+		*data = (unsigned char*)m->bufs[m->pos];
+		m->pos++;
+		return bytes;
+	}
+#else
 	if(bytes == 0 && sock.ipv4sock >= 0)
 	{
-		fromlen = sizeof(struct sockaddr_in);
-		bytes = recvfrom(sock.ipv4sock, (char*)data, maxsize, 0, (struct sockaddr *)&sockaddrbuf, &fromlen);
+		socklen_t fromlen = sizeof(struct sockaddr_in);
+		bytes = recvfrom(sock.ipv4sock, (char*)buffer, maxsize, 0, (struct sockaddr *)&sockaddrbuf, &fromlen);
+		*data = buffer;
 	}
 
 	if(bytes <= 0 && sock.ipv6sock >= 0)
 	{
-		fromlen = sizeof(struct sockaddr_in6);
-		bytes = recvfrom(sock.ipv6sock, (char*)data, maxsize, 0, (struct sockaddr *)&sockaddrbuf, &fromlen);
+		socklen_t fromlen = sizeof(struct sockaddr_in6);
+		bytes = recvfrom(sock.ipv6sock, (char*)buffer, maxsize, 0, (struct sockaddr *)&sockaddrbuf, &fromlen);
+		*data = buffer;
 	}
+#endif
 
 #if defined(CONF_WEBSOCKETS)
 	if(bytes <= 0 && sock.web_ipv4sock >= 0)
 	{
-		fromlen = sizeof(struct sockaddr);
-		bytes = websocket_recv(sock.web_ipv4sock, data, maxsize, (struct sockaddr_in *)&sockaddrbuf, fromlen);
+		socklen_t fromlen = sizeof(struct sockaddr);
+		bytes = websocket_recv(sock.web_ipv4sock, buffer, maxsize, (struct sockaddr_in *)&sockaddrbuf, fromlen);
+		*data = buffer;
 		((struct sockaddr_in *)&sockaddrbuf)->sin_family = AF_WEBSOCKET_INET;
 	}
 #endif
@@ -1532,7 +1608,7 @@ int net_udp_recv(NETSOCKET sock, NETADDR *addr, void *data, int maxsize)
 	else if(bytes == 0)
 		return 0;
 	return -1; /* error */
-#else
+#else /* ifdef FUZZING */
 	addr->type = NETTYPE_IPV4;
 	addr->port = 11111;
 	addr->ip[0] = 127;
@@ -1549,7 +1625,8 @@ int net_udp_recv(NETSOCKET sock, NETADDR *addr, void *data, int maxsize)
 			break;
 		}
 
-		((unsigned char*)data)[CurrentData] = gs_NetData[gs_NetPosition];
+		((unsigned char*)buffer)[CurrentData] = gs_NetData[gs_NetPosition];
+		*data = buffer;
 		CurrentData++;
 		gs_NetPosition++;
 	}
@@ -2775,6 +2852,32 @@ int str_utf8_encode(char *ptr, int chr)
 		ptr[1] = 0x80|((chr>>12)&0x3F);
 		ptr[2] = 0x80|((chr>>6)&0x3F);
 		ptr[3] = 0x80|(chr&0x3F);
+		return 4;
+	}
+
+	return 0;
+}
+
+int str_utf16le_encode(char *ptr, int chr)
+{
+	if(chr < 0x10000)
+	{
+		ptr[0] = chr;
+		ptr[1] = chr >> 0x8;
+		return 2;
+	}
+	else if(chr <= 0x10FFFF)
+	{
+		int U = chr - 0x10000;
+		int W1 = 0xD800, W2 = 0xDC00;
+
+		W1 |= ((U >> 10) & 0x3FF);
+		W2 |= (U & 0x3FF);
+
+		ptr[0] = W1;
+		ptr[1] = W1 >> 0x8;
+		ptr[2] = W2;
+		ptr[3] = W2 >> 0x8;
 		return 4;
 	}
 

@@ -9,12 +9,22 @@
 #define BASE_SYSTEM_H
 
 #include "detect.h"
+
+#ifndef __USE_GNU
+#define __USE_GNU
+#endif
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <time.h>
 
 #ifdef CONF_FAMILY_UNIX
 #include <sys/un.h>
+#endif
+
+#ifdef CONF_PLATFORM_LINUX
+#include <sys/socket.h>
+#include <netinet/in.h>
 #endif
 
 #ifdef __cplusplus
@@ -149,7 +159,7 @@ void mem_zero(void *block, unsigned size);
 		size - Size of the data to compare
 
 	Returns:
-		<0 - Block a is lesser then block b
+		<0 - Block a is lesser than block b
 		0 - Block a is equal to block b
 		>0 - Block a is greater than block b
 */
@@ -466,9 +476,9 @@ void aio_free(ASYNCIO *aio);
 		Suspends the current thread for a given period.
 
 	Parameters:
-		milliseconds - Number of milliseconds to sleep.
+		microseconds - Number of microseconds to sleep.
 */
-void thread_sleep(int milliseconds);
+void thread_sleep(int microseconds);
 
 /*
 	Function: thread_init
@@ -666,11 +676,26 @@ int net_host_lookup(const char *hostname, NETADDR *addr, int types);
 		b - Address to compare to.
 
 	Returns:
-		<0 - Address a is lesser then address b
+		<0 - Address a is lesser than address b
 		0 - Address a is equal to address b
-		>0 - Address a is greater then address b
+		>0 - Address a is greater than address b
 */
 int net_addr_comp(const NETADDR *a, const NETADDR *b);
+
+/*
+	Function: net_addr_comp_noport
+		Compares two network addresses ignoring port.
+
+	Parameters:
+		a - Address to compare
+		b - Address to compare to.
+
+	Returns:
+		<0 - Address a is lesser than address b
+		0 - Address a is equal to address b
+		>0 - Address a is greater than address b
+*/
+int net_addr_comp_noport(const NETADDR *a, const NETADDR *b);
 
 /*
 	Function: net_addr_str
@@ -732,6 +757,24 @@ NETSOCKET net_udp_create(NETADDR bindaddr);
 */
 int net_udp_send(NETSOCKET sock, const NETADDR *addr, const void *data, int size);
 
+#define VLEN 128
+#define PACKETSIZE 1400
+typedef struct
+{
+#ifdef CONF_PLATFORM_LINUX
+	int pos;
+	int size;
+	struct mmsghdr msgs[VLEN];
+	struct iovec iovecs[VLEN];
+	char bufs[VLEN][PACKETSIZE];
+	char sockaddrs[VLEN][128];
+#else
+	int dummy;
+#endif
+} MMSGS;
+
+void net_init_mmsgs(MMSGS* m);
+
 /*
 	Function: net_udp_recv
 		Receives a packet over an UDP socket.
@@ -739,14 +782,15 @@ int net_udp_send(NETSOCKET sock, const NETADDR *addr, const void *data, int size
 	Parameters:
 		sock - Socket to use.
 		addr - Pointer to an NETADDR that will receive the address.
-		data - Pointer to a buffer that will receive the data.
+		buffer - Pointer to a buffer that can be used to receive the data.
 		maxsize - Maximum size to receive.
+		data - Will get set to the actual data, might be the passed buffer or an internal one
 
 	Returns:
 		On success it returns the number of bytes received. Returns -1
 		on error.
 */
-int net_udp_recv(NETSOCKET sock, NETADDR *addr, void *data, int maxsize);
+int net_udp_recv(NETSOCKET sock, NETADDR *addr, void *buffer, int maxsize, MMSGS* m, unsigned char **data);
 
 /*
 	Function: net_udp_close
@@ -1077,9 +1121,9 @@ char *str_skip_whitespaces(char *str);
 		b - String to compare.
 
 	Returns:
-		<0 - String a is lesser then string b
+		<0 - String a is lesser than string b
 		0 - String a is equal to string b
-		>0 - String a is greater then string b
+		>0 - String a is greater than string b
 
 	Remarks:
 		- Only garanted to work with a-z/A-Z.
@@ -1116,9 +1160,9 @@ int str_comp_nocase_num(const char *a, const char *b, const int num);
 		b - String to compare.
 
 	Returns:
-		<0 - String a is lesser then string b
+		<0 - String a is lesser than string b
 		0 - String a is equal to string b
-		>0 - String a is greater then string b
+		>0 - String a is greater than string b
 
 	Remarks:
 		- The strings are treated as zero-terminated strings.
@@ -1135,9 +1179,9 @@ int str_comp(const char *a, const char *b);
 		num - Maximum characters to compare
 
 	Returns:
-		<0 - String a is lesser then string b
+		<0 - String a is lesser than string b
 		0 - String a is equal to string b
-		>0 - String a is greater then string b
+		>0 - String a is greater than string b
 
 	Remarks:
 		- The strings are treated as zero-terminated strings.
@@ -1153,9 +1197,9 @@ int str_comp_num(const char *a, const char *b, const int num);
 		b - String to compare.
 
 	Returns:
-		<0 - String a is lesser then string b
+		<0 - String a is lesser than string b
 		0 - String a is equal to string b
-		>0 - String a is greater then string b
+		>0 - String a is greater than string b
 
 	Remarks:
 		- The strings are treated as zero-terminated strings.
@@ -1693,6 +1737,21 @@ int str_utf8_decode(const char **ptr);
 		- Does not do zero termination of the string.
 */
 int str_utf8_encode(char *ptr, int chr);
+
+/*
+	Function: str_utf16le_encode
+		Encode an utf8 character
+
+	Parameters:
+		ptr - Pointer to a buffer that should receive the data. Should be able to hold at least 4 bytes.
+
+	Returns:
+		Number of bytes put into the buffer.
+
+	Remarks:
+		- Does not do zero termination of the string.
+*/
+int str_utf16le_encode(char *ptr, int chr);
 
 /*
 	Function: str_utf8_check

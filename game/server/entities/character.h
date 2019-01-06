@@ -160,7 +160,7 @@ private:
 	// DDRace
 
 
-	void HandleTiles(int Index, float FractionOfTick);
+	void HandleTiles(int Index);
 	float m_Time;
 	int m_LastBroadcast;
 	void DDRaceInit();
@@ -208,7 +208,7 @@ public:
 	int m_TuneZoneOld;
 	int m_PainSoundTimer;
 	int m_LastMove;
-	float m_StartTime;
+	int m_StartTime;
 	vec2 m_PrevPos;
 	int m_TeleCheckpoint;
 	int m_CpTick;
@@ -256,10 +256,7 @@ public:
 	bool m_HasTeleLaser;
 	vec2 m_TeleGunPos;
 	bool m_TeleGunTeleport;
-	bool m_ShowTimesInNames;
-	bool m_GotFastcapFlag1;
-	bool m_GotFastcapFlag2;
-	bool m_HasFiredFirst;
+	bool m_IsBlueTeleGunTeleport;
 
 	// Setters/Getters because i don't want to modify vanilla vars access modifiers
 	int GetLastWeapon() { return m_LastWeapon; };
