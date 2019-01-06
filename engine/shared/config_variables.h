@@ -12,6 +12,7 @@ MACRO_CONFIG_INT(PlayerCountry, player_country, -1, -1, 1000, CFGFLAG_SAVE|CFGFL
 MACRO_CONFIG_STR(Password, password, 32, "", CFGFLAG_CLIENT|CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Password to the server")
 MACRO_CONFIG_STR(Logfile, logfile, 128, "", CFGFLAG_SAVE|CFGFLAG_CLIENT|CFGFLAG_SERVER, "Filename to log all output to")
 MACRO_CONFIG_INT(ConsoleOutputLevel, console_output_level, 0, 0, 2, CFGFLAG_CLIENT|CFGFLAG_SERVER, "Adjusts the amount of information in the console")
+MACRO_CONFIG_INT(Events, events, 1, 0, 1, CFGFLAG_SAVE|CFGFLAG_CLIENT|CFGFLAG_SERVER, "Enable triggering of events, like the happy eye emotes on some holidays.")
 
 MACRO_CONFIG_INT(ClSaveSettings, cl_save_settings, 1, 0, 1, CFGFLAG_CLIENT, "Write the settings file on exit")
 MACRO_CONFIG_INT(ClRefreshRate, cl_refresh_rate, 0, 0, 10000, CFGFLAG_SAVE|CFGFLAG_CLIENT, "Refresh rate for updating the game (in Hz)")
@@ -32,8 +33,6 @@ MACRO_CONFIG_INT(ClShowBroadcasts, cl_show_broadcasts, 1, 0, 1, CFGFLAG_CLIENT, 
 MACRO_CONFIG_INT(ClPrintBroadcasts, cl_print_broadcasts, 1, 0, 1, CFGFLAG_CLIENT|CFGFLAG_SAVE, "Print broadcasts to console")
 MACRO_CONFIG_INT(ClPrintMotd, cl_print_motd, 1, 0, 1, CFGFLAG_CLIENT|CFGFLAG_SAVE, "Print motd to console")
 MACRO_CONFIG_INT(ClFriendsIgnoreClan, cl_friends_ignore_clan, 0, 0, 1, CFGFLAG_CLIENT|CFGFLAG_SAVE, "Ignore clan tag when searching for friends")
-
-MACRO_CONFIG_INT(ClEventthread, cl_eventthread, 0, 0, 1, CFGFLAG_CLIENT, "Enables the usage of a thread to pump the events")
 
 MACRO_CONFIG_STR(BrFilterString, br_filter_string, 25, "Novice", CFGFLAG_SAVE|CFGFLAG_CLIENT, "Server browser filtering string")
 MACRO_CONFIG_STR(BrExcludeString, br_exclude_string, 25, "", CFGFLAG_SAVE|CFGFLAG_CLIENT, "Server browser exclusion string")
@@ -134,6 +133,7 @@ MACRO_CONFIG_INT(InpIgnoredModifiers, inp_ignored_modifiers, 0, 0, 65536, CFGFLA
 
 MACRO_CONFIG_STR(SvName, sv_name, 128, "unnamed server", CFGFLAG_SERVER, "Server name")
 MACRO_CONFIG_STR(Bindaddr, bindaddr, 128, "", CFGFLAG_CLIENT|CFGFLAG_SERVER|CFGFLAG_MASTER, "Address to bind the client/server to")
+MACRO_CONFIG_INT(SvIpv4Only, sv_ipv4only, 0, 0, 1, CFGFLAG_SERVER, "Whether to bind only to ipv4, otherwise bind to all available interfaces")
 MACRO_CONFIG_INT(SvPort, sv_port, 8303, 0, 0, CFGFLAG_SERVER, "Port to use for the server (Only ports 8303-8310 work in LAN server browser)")
 MACRO_CONFIG_INT(SvExternalPort, sv_external_port, 0, 0, 0, CFGFLAG_SERVER, "External port to report to the master servers")
 MACRO_CONFIG_STR(SvMap, sv_map, 128, "Kobra 4", CFGFLAG_SERVER, "Map to use on the server")
@@ -161,7 +161,6 @@ MACRO_CONFIG_INT(SvPlayerDemoRecord, sv_player_demo_record, 0, 0, 1, CFGFLAG_SER
 MACRO_CONFIG_INT(SvDemoChat, sv_demo_chat, 0, 0, 1, CFGFLAG_SERVER, "Record chat for demos")
 MACRO_CONFIG_INT(SvServerInfoPerSecond, sv_server_info_per_second, 50, 1, 1000, CFGFLAG_SERVER, "Maximum number of complete server info responses that are sent out per second")
 MACRO_CONFIG_INT(SvVanConnPerSecond, sv_van_conn_per_second, 10, 1, 1000, CFGFLAG_SERVER, "Antispoof specific ratelimit")
-MACRO_CONFIG_STR(SvModhelpUrl, sv_modhelp_url, 128, "", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "HTTP URL to POST moderator help requests to")
 
 MACRO_CONFIG_STR(EcBindaddr, ec_bindaddr, 128, "localhost", CFGFLAG_ECON, "Address to bind the external console to. Anything but 'localhost' is dangerous")
 MACRO_CONFIG_INT(EcPort, ec_port, 0, 0, 0, CFGFLAG_ECON, "Port to use for the external console")
@@ -336,10 +335,6 @@ MACRO_CONFIG_INT(SvMaxAfkVoteTime, sv_max_afk_vote_time, 300, 0, 9999, CFGFLAG_S
 MACRO_CONFIG_INT(SvPlasmaRange, sv_plasma_range, 700, 1, 99999, CFGFLAG_SERVER|CFGFLAG_GAME, "How far will the plasma gun track tees")
 MACRO_CONFIG_INT(SvPlasmaPerSec, sv_plasma_per_sec, 3, 0, 50, CFGFLAG_SERVER|CFGFLAG_GAME, "How many shots does the plasma gun fire per seconds")
 MACRO_CONFIG_INT(SvDraggerRange, sv_dragger_range, 700, 1, 99999, CFGFLAG_SERVER|CFGFLAG_GAME, "How far will the dragger track tees")
-MACRO_CONFIG_INT(SvHealthAndAmmo, sv_health_and_ammo, 0, 0, 1, CFGFLAG_SERVER|CFGFLAG_GAME, "Wether tees take damage and have limited ammo")
-MACRO_CONFIG_INT(SvKillGrenades, sv_kill_grenades, 0, 0, 1, CFGFLAG_SERVER|CFGFLAG_GAME, "Kill grenades on player death")
-MACRO_CONFIG_INT(SvFastcap, sv_fastcap, 0, 0, 1, CFGFLAG_SERVER|CFGFLAG_GAME, "Wether fastcap mode is turned on")
-MACRO_CONFIG_INT(SvNoWeapons, sv_no_weapons, 0, 0, 1, CFGFLAG_SERVER|CFGFLAG_GAME, "Omit grenade pickups for fastcap")
 MACRO_CONFIG_INT(SvVotePause, sv_vote_pause, 1, 0, 1, CFGFLAG_SERVER, "Allow voting to pause players (instead of moving to spectators)")
 MACRO_CONFIG_INT(SvVotePauseTime, sv_vote_pause_time, 10, 0, 360, CFGFLAG_SERVER, "The time (in seconds) players have to wait in pause when paused by vote")
 MACRO_CONFIG_INT(SvTuneReset, sv_tune_reset, 1, 0, 1, CFGFLAG_SERVER, "Whether tuning is reset after each map change or not")
@@ -356,7 +351,6 @@ MACRO_CONFIG_INT(SvChatPenalty, sv_chat_penalty, 250, 50, 1000, CFGFLAG_SERVER, 
 MACRO_CONFIG_INT(SvChatThreshold, sv_chat_threshold, 1000, 50, 10000 , CFGFLAG_SERVER, "if chats core exceeds this, the player will be muted for sv_spam_mute_duration seconds")
 MACRO_CONFIG_INT(SvSpamMuteDuration, sv_spam_mute_duration, 60, 0, 3600 , CFGFLAG_SERVER, "how many seconds to mute, if player triggers mute on spam. 0 = off")
 
-MACRO_CONFIG_INT(SvEvents, sv_events, 1, 0, 1, CFGFLAG_SERVER, "Enable triggering of server events, like the happy eyeemotes on some holidays.")
 MACRO_CONFIG_INT(SvRankCheats, sv_rank_cheats, 0, 0, 1, CFGFLAG_SERVER, "Enable ranks after cheats have been used (file based server only)")
 MACRO_CONFIG_INT(SvShutdownWhenEmpty, sv_shutdown_when_empty, 0, 0, 1, CFGFLAG_SERVER, "Shutdown server as soon as no one is on it anymore")
 MACRO_CONFIG_INT(SvReloadWhenEmpty, sv_reload_when_empty, 0, 0, 2, CFGFLAG_SERVER, "Reload map when server is empty (1 = reload once, 2 = reload every time server gets empty)")
