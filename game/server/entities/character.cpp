@@ -2127,13 +2127,13 @@ void CCharacter::DDRacePostCoreTick()
 	HandleSkippableTiles(CurrentIndex);
 
 	// handle Anti-Skip tiles
-	std::list < int > Indices = GameServer()->Collision()->GetMapIndices(m_PrevPos, m_Pos);
+	std::list< std::pair<int, float> > Indices = GameServer()->Collision()->GetMapIndices(m_PrevPos, m_Pos);
 	if(!Indices.empty())
-		for(std::list < int >::iterator i = Indices.begin(); i != Indices.end(); i++)
-			HandleTiles(*i);
+		for(std::list< std::pair<int, float> >::iterator i = Indices.begin(); i != Indices.end(); i++)
+        			HandleTiles(i->first, i->second);
 	else
 	{
-		HandleTiles(CurrentIndex);
+		//HandleTiles(CurrentIndex);
 	}
 
 	// teleport gun
