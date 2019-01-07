@@ -54,9 +54,9 @@ void CGameControllerDDRace::InitTeleporter()
 void CGameControllerDDRace::SetGameType()
 {
 	if (g_Config.m_SvTestingCommands)
-		str_copy(m_pGameType, "TestDDraceNetwork", sizeof(m_pGameType));
+		str_copy(m_pGameType, "TestQuadrace", sizeof(m_pGameType));
 	else if (g_Config.m_SvFastcap)
-		str_copy(m_pGameType, "FastCap   DDNET", sizeof(m_pGameType));
+		str_copy(m_pGameType, "QuadraceFastCap", sizeof(m_pGameType));
 	else
-		str_copy(m_pGameType, "Race      DDNET", sizeof(m_pGameType));
+		str_copy(m_pGameType, "Quadrace", sizeof(m_pGameType));
 }
