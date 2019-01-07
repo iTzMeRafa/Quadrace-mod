@@ -47,7 +47,7 @@ public:
 	virtual void MapVote(int ClientID, const char *pMapName) = 0;
 	virtual void CheckBirthday(int ClientID) = 0;
 	virtual void LoadScore(int ClientID) = 0;
-	virtual void SaveScore(int ClientID, float Time, float aCpTime[NUM_CHECKPOINTS], bool NotEligible) = 0;
+	virtual void SaveScore(int ClientID, float Time, float aCpTime[NUM_CHECKPOINTS], float CurrentRecord) = 0;
 
 	virtual void SaveTeamScore(int *pClientIDs, unsigned int Size, float Time) = 0;
 
@@ -65,6 +65,10 @@ public:
 
 	virtual void SaveTeam(int Team, const char *pCode, int ClientID, const char *pServer) = 0;
 	virtual void LoadTeam(const char *pCode, int ClientID) = 0;
+
+	virtual void ProcessRecordQueue() = 0;
+	virtual void InsertRecordQueue(const char *PlayerName, float Time) = 0;
+	virtual void ShowMapPoints(int ClientID, const char* pName) = 0;
 
 	// called when the server is shut down but not on mapchange/reload
 	virtual void OnShutdown() = 0;

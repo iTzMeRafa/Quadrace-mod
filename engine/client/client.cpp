@@ -36,13 +36,13 @@
 
 #include <engine/external/md5/md5.h>
 
-#include <engine/client/http.h>
 #include <engine/shared/config.h>
 #include <engine/shared/compression.h>
 #include <engine/shared/datafile.h>
 #include <engine/shared/demo.h>
 #include <engine/shared/filecollection.h>
 #include <engine/shared/ghost.h>
+#include <engine/shared/http.h>
 #include <engine/shared/network.h>
 #include <engine/shared/packer.h>
 #include <engine/shared/protocol.h>
@@ -2787,7 +2787,7 @@ void CClient::Run()
 	bool LastQ = false;
 	bool LastE = false;
 	bool LastG = false;
-
+	
 	int64 LastTime = time_get_microseconds();
 	int64 LastRenderTime = time_get();
 
@@ -2960,7 +2960,7 @@ void CClient::Run()
 		{
 			SleepTimeInMicroSeconds = ((int64)1000000 / (int64)g_Config.m_ClRefreshRateInactive) - (Now - LastTime);
 			if(SleepTimeInMicroSeconds / (int64)1000 > (int64)0)
-				thread_sleep(SleepTimeInMicroSeconds);
+				thread_sleep(SleepTimeInMicroSeconds / (int64)1000);
 			Slept = true;
 		}
 		else if(g_Config.m_ClRefreshRate)
@@ -2990,7 +2990,7 @@ void CClient::Run()
 
 		if(g_Config.m_DbgHitch)
 		{
-			thread_sleep(g_Config.m_DbgHitch*1000);
+			thread_sleep(g_Config.m_DbgHitch);
 			g_Config.m_DbgHitch = 0;
 		}
 
@@ -3515,9 +3515,9 @@ void CClient::RegisterCommands()
 	m_pConsole->Register("demo_speed", "i[speed]", CFGFLAG_CLIENT, Con_DemoSpeed, this, "Set demo speed");
 
 	m_pConsole->Chain("cl_timeout_seed", ConchainTimeoutSeed, this);
-
+	
 	m_pConsole->Chain("password", ConchainPassword, this);
-
+	
 	// used for server browser update
 	m_pConsole->Chain("br_filter_string", ConchainServerBrowserUpdate, this);
 	m_pConsole->Chain("br_filter_gametype", ConchainServerBrowserUpdate, this);
@@ -3540,11 +3540,6 @@ static CClient *CreateClient()
 	CClient *pClient = static_cast<CClient *>(malloc(sizeof(*pClient)));
 	mem_zero(pClient, sizeof(CClient));
 	return new(pClient) CClient;
-}
-
-void CClient::HandleConnectLink(const char *pArg)
-{
-	str_copy(m_aCmdConnect, pArg + sizeof(CONNECTLINK) - 1, sizeof(m_aCmdConnect));
 }
 
 /*
@@ -3693,9 +3688,7 @@ int main(int argc, const char **argv) // ignore_convention
 	g_Config.m_ClConfigVersion = 1;
 
 	// parse the command line arguments
-	if(argc == 2 && str_startswith(argv[1], CONNECTLINK))
-		pClient->HandleConnectLink(argv[1]);
-	else if(argc > 1) // ignore_convention
+	if(argc > 1) // ignore_convention
 		pConsole->ParseArguments(argc-1, &argv[1]); // ignore_convention
 
 	pClient->Engine()->InitLogfile();

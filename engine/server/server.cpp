@@ -20,6 +20,7 @@
 #include <engine/shared/demo.h>
 #include <engine/shared/econ.h>
 #include <engine/shared/filecollection.h>
+#include <engine/shared/http.h>
 #include <engine/shared/netban.h>
 #include <engine/shared/network.h>
 #include <engine/shared/packer.h>
@@ -551,51 +552,6 @@ bool CServer::ClientAuthed(int ClientID)
 int CServer::MaxClients() const
 {
 	return m_NetServer.MaxClients();
-}
-
-int CServer::ClientCount()
-{
-	int ClientCount = 0;
-	for(int i = 0; i < MAX_CLIENTS; i++)
-	{
-		if(m_aClients[i].m_State != CClient::STATE_EMPTY)
-		{
-			ClientCount++;
-		}
-	}
-
-	return ClientCount;
-}
-
-int CServer::DistinctClientCount()
-{
-	NETADDR aAddresses[MAX_CLIENTS];
-	for(int i = 0; i < MAX_CLIENTS; i++)
-	{
-		if(m_aClients[i].m_State != CClient::STATE_EMPTY)
-		{
-			GetClientAddr(i, &aAddresses[i]);
-		}
-	}
-
-	int ClientCount = 0;
-	for(int i = 0; i < MAX_CLIENTS; i++)
-	{
-		if(m_aClients[i].m_State != CClient::STATE_EMPTY)
-		{
-			ClientCount++;
-			for(int j = 0; j < i; j++)
-			{
-				if(!net_addr_comp_noport(&aAddresses[i], &aAddresses[j]))
-				{
-					ClientCount--;
-					break;
-				}
-			}
-		}
-	}
-
-	return ClientCount;
 }
 
 int CServer::SendMsg(CMsgPacker *pMsg, int Flags, int ClientID)
@@ -1707,6 +1663,9 @@ void CServer::PumpNetwork()
 
 	m_ServerBan.Update();
 	m_Econ.Update();
+#if defined(CONF_FAMILY_UNIX)
+	m_Fifo.Update();
+#endif
 }
 
 char *CServer::GetMapName()
@@ -1793,26 +1752,25 @@ int CServer::Run()
 	m_PrintCBIndex = Console()->RegisterPrintCallback(g_Config.m_ConsoleOutputLevel, SendRconLineAuthed, this);
 
 	// load map
-	if(!LoadMap(g_Config.m_SvMap))
+	/*if(!LoadMap(g_Config.m_SvMap))
 	{
 		dbg_msg("server", "failed to load map. mapname='%s'", g_Config.m_SvMap);
 		return -1;
-	}
+	}*/
+	m_aCurrentMap[0] = 0;
 
 	// start server
 	NETADDR BindAddr;
-	int NetType = g_Config.m_SvIpv4Only ? NETTYPE_IPV4 : NETTYPE_ALL;
-
-	if(g_Config.m_Bindaddr[0] && net_host_lookup(g_Config.m_Bindaddr, &BindAddr, NetType) == 0)
+	if(g_Config.m_Bindaddr[0] && net_host_lookup(g_Config.m_Bindaddr, &BindAddr, NETTYPE_ALL) == 0)
 	{
 		// sweet!
-		BindAddr.type = NetType;
+		BindAddr.type = NETTYPE_ALL;
 		BindAddr.port = g_Config.m_SvPort;
 	}
 	else
 	{
 		mem_zero(&BindAddr, sizeof(BindAddr));
-		BindAddr.type = NetType;
+		BindAddr.type = NETTYPE_ALL;
 		BindAddr.port = g_Config.m_SvPort;
 	}
 
@@ -1834,7 +1792,7 @@ int CServer::Run()
 	str_format(aBuf, sizeof(aBuf), "server name is '%s'", g_Config.m_SvName);
 	Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
 
-	GameServer()->OnInit();
+	GameServer()->OnInit(true);
 	if(ErrorShutdown())
 	{
 		return 1;
@@ -1943,7 +1901,7 @@ int CServer::Run()
 							char aBuf[256];
 
 							str_format(aBuf, sizeof(aBuf), "ClientID=%d addr=%s secure=%s blacklisted", ClientID, aAddrStr, m_NetServer.HasSecurityToken(ClientID)?"yes":"no");
-
+							
 							Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "dnsbl", aBuf);
 						}
 					}
@@ -1988,10 +1946,6 @@ int CServer::Run()
 					DoSnapshot();
 
 				UpdateClientRconCommands();
-
-#if defined(CONF_FAMILY_UNIX)
-				m_Fifo.Update();
-#endif
 			}
 
 			// master server stuff
@@ -2388,7 +2342,7 @@ void CServer::ConNameBan(IConsole::IResult *pResult, void *pUser)
 	{
 		Distance = str_length(pName) / 3;
 	}
-
+	
 	for(int i = 0; i < pThis->m_aNameBans.size(); i++)
 	{
 		CNameBan *pBan = &pThis->m_aNameBans[i];
@@ -2941,6 +2895,8 @@ int main(int argc, const char **argv) // ignore_convention
 	pConfig->Init();
 	pEngineMasterServer->Init();
 	pEngineMasterServer->Load();
+
+	HttpInit(pStorage);
 
 	// register all console commands
 	pServer->RegisterCommands();

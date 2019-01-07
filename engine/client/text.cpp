@@ -34,7 +34,6 @@ struct SFontSizeChar
 
 	float m_aUVs[4];
 	int64 m_TouchTime;
-	FT_UInt m_GlyphIndex;
 };
 
 struct STextCharQuadVertexColor
@@ -443,11 +442,7 @@ class CTextRender : public IEngineTextRender
 
 		FT_Set_Pixel_Sizes(pFont->m_FtFace, 0, pSizeData->m_FontSize);
 
-		FT_UInt GlyphIndex = 0;
-		if(pFont->m_FtFace->charmap)
-			GlyphIndex = FT_Get_Char_Index(pFont->m_FtFace, (FT_ULong)Chr);
-
-		if(GlyphIndex != 0 && FT_Load_Glyph(pFont->m_FtFace, GlyphIndex, FT_LOAD_RENDER|FT_LOAD_NO_BITMAP))
+		if(FT_Load_Char(pFont->m_FtFace, Chr, FT_LOAD_RENDER|FT_LOAD_NO_BITMAP))
 		{
 			dbg_msg("pFont", "error loading glyph %d", Chr);
 			return;
@@ -463,6 +458,7 @@ class CTextRender : public IEngineTextRender
 		unsigned int Width = pBitmap->width + x * 2;
 		unsigned int Height = pBitmap->rows + y * 2;
 
+
 		// prepare glyph data
 		mem_zero(ms_aGlyphData, Width * Height);
 
@@ -470,6 +466,7 @@ class CTextRender : public IEngineTextRender
 			for(px = 0; px < pBitmap->width; px++) // ignore_convention
 				ms_aGlyphData[(py+y)*Width+px+x] = pBitmap->buffer[py*pBitmap->width+px]; // ignore_convention
 		
+
 		// upload the glyph
 		int X = 0;
 		int Y = 0;
@@ -519,7 +516,6 @@ class CTextRender : public IEngineTextRender
 			pFontchr->m_aUVs[1] = Y;
 			pFontchr->m_aUVs[2] = pFontchr->m_aUVs[0] + BMPWidth;
 			pFontchr->m_aUVs[3] = pFontchr->m_aUVs[1] + BMPHeight;
-			pFontchr->m_GlyphIndex = GlyphIndex;
 		}
 	}
 
@@ -547,10 +543,10 @@ class CTextRender : public IEngineTextRender
 		FT_Set_Pixel_Sizes(pFont->m_FtFace, 0, size);
 	}
 
-	float Kerning(CFont *pFont, FT_UInt GlyphIndexLeft, FT_UInt GlyphIndexRight)
+	float Kerning(CFont *pFont, int Left, int Right)
 	{
 		FT_Vector Kerning = {0,0};
-		FT_Get_Kerning(pFont->m_FtFace, GlyphIndexLeft, GlyphIndexRight, FT_KERNING_DEFAULT, &Kerning);
+		FT_Get_Kerning(pFont->m_FtFace, Left, Right, FT_KERNING_DEFAULT, &Kerning);
 		return (Kerning.x>>6);
 	}
 
@@ -860,9 +856,6 @@ public:
 			}
 		}
 
-		FT_UInt LastCharGlyphIndex = 0;
-		size_t CharacterCounter = 0;
-
 		while(pCurrent < pEnd && (pCursor->m_MaxLines < 1 || LineCount <= pCursor->m_MaxLines))
 		{
 			int NewLine = 0;
@@ -913,9 +906,6 @@ public:
 
 				if(Character == '\n')
 				{
-					++CharacterCounter;
-					LastCharGlyphIndex = 0;
-
 					DrawX = pCursor->m_StartX;
 					DrawY += Size;
 					if((m_RenderFlags&TEXT_RENDER_FLAG_NO_PIXEL_ALIGMENT) == 0)
@@ -932,24 +922,14 @@ public:
 				SFontSizeChar *pChr = GetChar(pFont, pSizeData, Character);
 				if(pChr)
 				{
-					bool ApplyBearingX = !(((m_RenderFlags&TEXT_RENDER_FLAG_NO_X_BEARING) != 0) || (CharacterCounter == 0 && (m_RenderFlags&TEXT_RENDER_FLAG_NO_FIRST_CHARACTER_X_BEARING) != 0));
-					float Advance = ((((m_RenderFlags&TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH) != 0) ? (pChr->m_Width) : (pChr->m_AdvanceX + ((!ApplyBearingX) ? (-pChr->m_OffsetX) : 0.f)))) * Scale;
-					
-					float CharKerning = 0.f;
-					if((m_RenderFlags&TEXT_RENDER_FLAG_KERNING) != 0)
-						CharKerning = Kerning(pFont, LastCharGlyphIndex, pChr->m_GlyphIndex)*Scale*Size;
-
-					LastCharGlyphIndex = pChr->m_GlyphIndex;
-					if(pCursor->m_Flags&TEXTFLAG_STOP_AT_END && (DrawX + CharKerning)+Advance*Size-pCursor->m_StartX > pCursor->m_LineWidth)
+					float Advance = ((((m_RenderFlags&TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH) != 0) ? (pChr->m_Width) : (pChr->m_AdvanceX + (((m_RenderFlags&TEXT_RENDER_FLAG_NO_X_BEARING) != 0) ? (-pChr->m_OffsetX) : 0.f))))  * Scale + Kerning(pFont, Character, NextCharacter)*Scale;
+					if(pCursor->m_Flags&TEXTFLAG_STOP_AT_END && DrawX+Advance*Size-pCursor->m_StartX > pCursor->m_LineWidth)
 					{
 						// we hit the end of the line, no more to render or count
 						pCurrent = pEnd;
 						break;
 					}
 
-					float BearingX = (!ApplyBearingX ? 0.f : pChr->m_OffsetX)*Scale*Size;
-					float CharWidth = pChr->m_Width*Scale*Size;
-					
 					if(pCursor->m_Flags&TEXTFLAG_RENDER && m_TextA != 0.f)
 					{
 						if(Graphics()->IsBufferingEnabled())
@@ -957,27 +937,12 @@ public:
 						else
 							Graphics()->QuadsSetSubset(pChr->m_aUVs[0] * UVScale, pChr->m_aUVs[3] * UVScale, pChr->m_aUVs[2] * UVScale, pChr->m_aUVs[1] * UVScale);
 						float Y = (DrawY + Size);
-
-						float BearingY = 0.f;
-						BearingY = (((m_RenderFlags&TEXT_RENDER_FLAG_NO_Y_BEARING) != 0) ? 0.f : (pChr->m_OffsetY*Scale*Size));
-
-						if((m_RenderFlags&TEXT_RENDER_FLAG_NO_OVERSIZE) != 0)
-						{
-							if(pChr->m_Height*Scale*Size + BearingY > Size)
-								BearingY -= pChr->m_Height*Scale*Size - Size;
-						}
-
-						IGraphics::CQuadItem QuadItem((DrawX + CharKerning) + BearingX, Y - BearingY, CharWidth, -pChr->m_Height*Scale*Size);
+						IGraphics::CQuadItem QuadItem(DrawX + ((((m_RenderFlags&TEXT_RENDER_FLAG_NO_X_BEARING) != 0) ? 0.f : pChr->m_OffsetX)*Scale*Size), Y - ((((m_RenderFlags&TEXT_RENDER_FLAG_NO_Y_BEARING) != 0) ? 0.f : pChr->m_OffsetY)*Scale*Size), pChr->m_Width*Scale*Size, -pChr->m_Height*Scale*Size);
 						Graphics()->QuadsDrawTL(&QuadItem, 1);
 					}
 
-					if(NextCharacter == 0 && (m_RenderFlags&TEXT_RENDER_FLAG_NO_LAST_CHARACTER_ADVANCE) != 0)
-						DrawX += BearingX + CharKerning + CharWidth;
-					else
-						DrawX += Advance*Size + CharKerning;
+					DrawX += Advance*Size;
 					pCursor->m_CharCount++;
-
-					++CharacterCounter;
 				}
 			}
 
@@ -1165,9 +1130,6 @@ public:
 
 		LineCount = pCursor->m_LineCount;
 		
-		FT_UInt LastCharGlyphIndex = 0;
-		size_t CharacterCounter = 0;
-
 		while(pCurrent < pEnd && (pCursor->m_MaxLines < 1 || LineCount <= pCursor->m_MaxLines))
 		{
 			int NewLine = 0;
@@ -1218,9 +1180,6 @@ public:
 
 				if(Character == '\n')
 				{
-					LastCharGlyphIndex = 0;
-					++CharacterCounter;
-
 					DrawX = pCursor->m_StartX;
 					DrawY += Size;
 					if((RenderFlags&TEXT_RENDER_FLAG_NO_PIXEL_ALIGMENT) == 0)
@@ -1237,24 +1196,15 @@ public:
 				SFontSizeChar *pChr = GetChar(TextContainer.m_pFont, pSizeData, Character);
 				if(pChr)
 				{
-					bool ApplyBearingX = !(((RenderFlags&TEXT_RENDER_FLAG_NO_X_BEARING) != 0) || (CharacterCounter == 0 && (RenderFlags&TEXT_RENDER_FLAG_NO_FIRST_CHARACTER_X_BEARING) != 0));
-					float Advance = ((((RenderFlags&TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH) != 0) ? (pChr->m_Width) : (pChr->m_AdvanceX + ((!ApplyBearingX) ? (-pChr->m_OffsetX) : 0.f)))) * Scale;
-					
-					float CharKerning = 0.f;
-					if((RenderFlags&TEXT_RENDER_FLAG_KERNING) != 0)
-						CharKerning = Kerning(TextContainer.m_pFont, LastCharGlyphIndex, pChr->m_GlyphIndex)*Scale*Size;
-					LastCharGlyphIndex = pChr->m_GlyphIndex;
+					float Advance = ((((RenderFlags&TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH) != 0) ? (pChr->m_Width) : (pChr->m_AdvanceX + (((RenderFlags&TEXT_RENDER_FLAG_NO_X_BEARING) != 0) ? (-pChr->m_OffsetX) : 0.f))))  * Scale + Kerning(TextContainer.m_pFont, Character, NextCharacter)*Scale;
 
-					if(pCursor->m_Flags&TEXTFLAG_STOP_AT_END && (DrawX + CharKerning) + Advance * Size - pCursor->m_StartX > pCursor->m_LineWidth)
+					if(pCursor->m_Flags&TEXTFLAG_STOP_AT_END && DrawX + Advance * Size - pCursor->m_StartX > pCursor->m_LineWidth)
 					{
 						// we hit the end of the line, no more to render or count
 						pCurrent = pEnd;
 						break;
 					}
 
-					float BearingX = (!ApplyBearingX ? 0.f : pChr->m_OffsetX)*Scale*Size;
-					float CharWidth = pChr->m_Width*Scale*Size;
-					
 					// don't add text that isn't drawn, the color overwrite is used for that
 					if(m_TextA != 0.f)
 					{
@@ -1262,17 +1212,8 @@ public:
 						STextCharQuad& TextCharQuad = TextContainer.m_StringInfo.m_CharacterQuads.back();
 
 						float Y = (DrawY + Size);
-
-						float BearingY = (((RenderFlags&TEXT_RENDER_FLAG_NO_Y_BEARING) != 0) ? 0.f : (pChr->m_OffsetY*Scale*Size));
-
-						if((RenderFlags&TEXT_RENDER_FLAG_NO_OVERSIZE) != 0)
-						{
-							if(pChr->m_Height*Scale*Size + BearingY > Size)
-								BearingY -= pChr->m_Height*Scale*Size - Size;
-						}
-
-						TextCharQuad.m_Vertices[0].m_X = (DrawX + CharKerning) + BearingX;
-						TextCharQuad.m_Vertices[0].m_Y = Y - BearingY;
+						TextCharQuad.m_Vertices[0].m_X = DrawX + (((RenderFlags&TEXT_RENDER_FLAG_NO_X_BEARING) != 0) ? 0.f : pChr->m_OffsetX)*Scale*Size;
+						TextCharQuad.m_Vertices[0].m_Y = Y - (((RenderFlags&TEXT_RENDER_FLAG_NO_Y_BEARING) != 0) ? 0.f : pChr->m_OffsetY)*Scale*Size;
 						TextCharQuad.m_Vertices[0].m_U = pChr->m_aUVs[0];
 						TextCharQuad.m_Vertices[0].m_V = pChr->m_aUVs[3];
 						TextCharQuad.m_Vertices[0].m_Color.m_R = (unsigned char)(m_TextR * 255.f);
@@ -1280,8 +1221,8 @@ public:
 						TextCharQuad.m_Vertices[0].m_Color.m_B = (unsigned char)(m_TextB * 255.f);
 						TextCharQuad.m_Vertices[0].m_Color.m_A = (unsigned char)(m_TextA * 255.f);
 
-						TextCharQuad.m_Vertices[1].m_X = (DrawX + CharKerning) + BearingX + CharWidth;
-						TextCharQuad.m_Vertices[1].m_Y = Y - BearingY;
+						TextCharQuad.m_Vertices[1].m_X = DrawX + (((RenderFlags&TEXT_RENDER_FLAG_NO_X_BEARING) != 0) ? 0.f : pChr->m_OffsetX)*Scale*Size + pChr->m_Width*Scale*Size;
+						TextCharQuad.m_Vertices[1].m_Y = Y - (((RenderFlags&TEXT_RENDER_FLAG_NO_Y_BEARING) != 0) ? 0.f : pChr->m_OffsetY)*Scale*Size;
 						TextCharQuad.m_Vertices[1].m_U = pChr->m_aUVs[2];
 						TextCharQuad.m_Vertices[1].m_V = pChr->m_aUVs[3];
 						TextCharQuad.m_Vertices[1].m_Color.m_R = (unsigned char)(m_TextR * 255.f);
@@ -1289,8 +1230,8 @@ public:
 						TextCharQuad.m_Vertices[1].m_Color.m_B = (unsigned char)(m_TextB * 255.f);
 						TextCharQuad.m_Vertices[1].m_Color.m_A = (unsigned char)(m_TextA * 255.f);
 
-						TextCharQuad.m_Vertices[2].m_X = (DrawX + CharKerning) + BearingX + CharWidth;
-						TextCharQuad.m_Vertices[2].m_Y = Y - BearingY - pChr->m_Height*Scale*Size;
+						TextCharQuad.m_Vertices[2].m_X = DrawX + (((RenderFlags&TEXT_RENDER_FLAG_NO_X_BEARING) != 0) ? 0.f : pChr->m_OffsetX)*Scale*Size + pChr->m_Width*Scale*Size;
+						TextCharQuad.m_Vertices[2].m_Y = Y - (((RenderFlags&TEXT_RENDER_FLAG_NO_Y_BEARING) != 0) ? 0.f : pChr->m_OffsetY)*Scale*Size - pChr->m_Height*Scale*Size;
 						TextCharQuad.m_Vertices[2].m_U = pChr->m_aUVs[2];
 						TextCharQuad.m_Vertices[2].m_V = pChr->m_aUVs[1];
 						TextCharQuad.m_Vertices[2].m_Color.m_R = (unsigned char)(m_TextR * 255.f);
@@ -1298,8 +1239,8 @@ public:
 						TextCharQuad.m_Vertices[2].m_Color.m_B = (unsigned char)(m_TextB * 255.f);
 						TextCharQuad.m_Vertices[2].m_Color.m_A = (unsigned char)(m_TextA * 255.f);
 
-						TextCharQuad.m_Vertices[3].m_X = (DrawX + CharKerning) + BearingX;
-						TextCharQuad.m_Vertices[3].m_Y = Y - BearingY - pChr->m_Height*Scale*Size;
+						TextCharQuad.m_Vertices[3].m_X = DrawX + (((RenderFlags&TEXT_RENDER_FLAG_NO_X_BEARING) != 0) ? 0.f : pChr->m_OffsetX)*Scale*Size;
+						TextCharQuad.m_Vertices[3].m_Y = Y - (((RenderFlags&TEXT_RENDER_FLAG_NO_Y_BEARING) != 0) ? 0.f : pChr->m_OffsetY)*Scale*Size - pChr->m_Height*Scale*Size;
 						TextCharQuad.m_Vertices[3].m_U = pChr->m_aUVs[0];
 						TextCharQuad.m_Vertices[3].m_V = pChr->m_aUVs[1];
 						TextCharQuad.m_Vertices[3].m_Color.m_R = (unsigned char)(m_TextR * 255.f);
@@ -1308,12 +1249,8 @@ public:
 						TextCharQuad.m_Vertices[3].m_Color.m_A = (unsigned char)(m_TextA * 255.f);
 					}
 
-					if(NextCharacter == 0 && (RenderFlags&TEXT_RENDER_FLAG_NO_LAST_CHARACTER_ADVANCE) != 0)
-						DrawX += BearingX + CharKerning + CharWidth;
-					else
-						DrawX += Advance * Size + CharKerning;
+					DrawX += Advance * Size;
 					pCursor->m_CharCount++;
-					++CharacterCounter;
 				}
 			}
 
@@ -1436,9 +1373,6 @@ public:
 		std::vector<IGraphics::CQuadItem> SelectionQuads;
 		IGraphics::CQuadItem CursorQuad;
 
-		FT_UInt LastCharGlyphIndex = 0;
-		size_t CharacterCounter = 0;
-
 		while(pCurrent < pEnd && (TextContainer.m_MaxLines < 1 || LineCount <= TextContainer.m_MaxLines))
 		{
 			int NewLine = 0;
@@ -1500,9 +1434,6 @@ public:
 
 				if(Character == '\n')
 				{
-					LastCharGlyphIndex = 0;
-					++CharacterCounter;
-
 					DrawX = TextContainer.m_StartX;
 					DrawY += Size;
 					if((RenderFlags&TEXT_RENDER_FLAG_NO_PIXEL_ALIGMENT) == 0)
@@ -1519,15 +1450,9 @@ public:
 				SFontSizeChar *pChr = GetChar(TextContainer.m_pFont, pSizeData, Character);
 				if(pChr)
 				{
-					bool ApplyBearingX = !(((RenderFlags&TEXT_RENDER_FLAG_NO_X_BEARING) != 0) || (CharacterCounter == 0 && (RenderFlags&TEXT_RENDER_FLAG_NO_FIRST_CHARACTER_X_BEARING) != 0));
-					float Advance = ((((RenderFlags&TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH) != 0) ? (pChr->m_Width) : (pChr->m_AdvanceX + (!ApplyBearingX ? (-pChr->m_OffsetX) : 0.f)))) * Scale;
+					float Advance = ((((RenderFlags&TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH) != 0) ? (pChr->m_Width) : (pChr->m_AdvanceX + (((RenderFlags&TEXT_RENDER_FLAG_NO_X_BEARING) != 0) ? (-pChr->m_OffsetX) : 0.f))))  * Scale + Kerning(TextContainer.m_pFont, Character, NextCharacter)*Scale;
 
-					float CharKerning = 0.f;
-					if((RenderFlags&TEXT_RENDER_FLAG_KERNING) != 0)
-						CharKerning = Kerning(TextContainer.m_pFont, LastCharGlyphIndex, pChr->m_GlyphIndex)*Scale*Size;
-					LastCharGlyphIndex = pChr->m_GlyphIndex;
-
-					if(TextContainer.m_Flags&TEXTFLAG_STOP_AT_END && (DrawX + CharKerning) + Advance * Size - TextContainer.m_StartX > TextContainer.m_LineWidth)
+					if(TextContainer.m_Flags&TEXTFLAG_STOP_AT_END && DrawX + Advance * Size - TextContainer.m_StartX > TextContainer.m_LineWidth)
 					{
 						// we hit the end of the line, no more to render or count
 						pCurrent = pEnd;
@@ -1538,24 +1463,16 @@ public:
 
 					if(CharBytePos == CursorPos)
 					{
-						CursorQuad.Set((DrawX + CharKerning), DrawY, 2.f * Scale * Size, MaxRowHeight);
+						CursorQuad.Set(DrawX, DrawY, 2.f * Scale * Size, MaxRowHeight);
 					}
 
 					if(CharBytePos >= SelectionStart && CharBytePos < SelectionEnd)
 					{
-						SelectionQuads.push_back(IGraphics::CQuadItem((DrawX + CharKerning), DrawY, Advance * Size, MaxRowHeight));
+						SelectionQuads.push_back(IGraphics::CQuadItem(DrawX, DrawY, Advance * Size, MaxRowHeight));
 					}
 
-					float BearingX = (!ApplyBearingX ? 0.f : pChr->m_OffsetX)*Scale*Size;
-					float CharWidth = pChr->m_Width*Scale*Size;
-					
-					if(NextCharacter == 0 && (RenderFlags&TEXT_RENDER_FLAG_NO_LAST_CHARACTER_ADVANCE) != 0)
-						DrawX += BearingX + CharKerning + CharWidth;
-					else
-						DrawX += Advance * Size + CharKerning;
-
+					DrawX += Advance * Size;
 					TextContainer.m_CharCount++;
-					++CharacterCounter;
 				}
 				pCurrentLast = pCurrent;
 			}

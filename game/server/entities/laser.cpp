@@ -21,11 +21,18 @@ CLaser::CLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, float StartEner
 	m_WasTele = false;
 	m_Type = Type;
 	m_TeleportCancelled = false;
-	m_IsBlueTeleport = false;
 	m_TuneZone = GameServer()->Collision()->IsTune(GameServer()->Collision()->GetMapIndex(m_Pos));
-	m_TeamMask = GameServer()->GetPlayerChar(Owner) ? GameServer()->GetPlayerChar(Owner)->Teams()->TeamMask(GameServer()->GetPlayerChar(Owner)->Team(), -1, m_Owner) : 0;
+
 	GameWorld()->InsertEntity(this);
-	DoBounce();
+
+	CCharacter *pOwnerChar = 0;
+	if(m_Owner >= 0)
+		pOwnerChar = GameServer()->GetPlayerChar(m_Owner);
+	int Team = -1;
+	if(pOwnerChar && pOwnerChar->IsAlive())
+		Team = pOwnerChar->Team();
+	int64_t TeamMask = ((CGameControllerDDRace*)GameServer()->m_pController)->m_Teams.TeamMask(Team, -1, -1);
+	DoBounce(TeamMask);
 }
 
 
@@ -79,7 +86,7 @@ bool CLaser::HitCharacter(vec2 From, vec2 To)
 	return true;
 }
 
-void CLaser::DoBounce()
+void CLaser::DoBounce(int64_t TeamMask)
 {
 	m_EvalTick = Server()->Tick();
 
@@ -154,7 +161,7 @@ void CLaser::DoBounce()
 			if(m_Bounces > BounceNum)
 				m_Energy = -1;
 
-			GameServer()->CreateSound(m_Pos, SOUND_RIFLE_BOUNCE, m_TeamMask);
+			GameServer()->CreateSound(m_Pos, SOUND_RIFLE_BOUNCE, TeamMask);
 		}
 	}
 	else
@@ -192,40 +199,16 @@ void CLaser::DoBounce()
 		{
 			pOwnerChar->m_TeleGunPos = PossiblePos;
 			pOwnerChar->m_TeleGunTeleport = true;
-			pOwnerChar->m_IsBlueTeleGunTeleport = m_IsBlueTeleport;
 		}
 	}
 	else if(m_Owner >= 0 && m_Pos)
 	{
 		int MapIndex = GameServer()->Collision()->GetPureMapIndex(Coltile);
+		int TileIndex = GameServer()->Collision()->GetTileIndex(MapIndex);
 		int TileFIndex = GameServer()->Collision()->GetFTileIndex(MapIndex);
-		bool IsSwitchTeleGun = GameServer()->Collision()->IsSwitch(MapIndex) == TILE_ALLOW_TELE_GUN;
-		bool IsBlueSwitchTeleGun = GameServer()->Collision()->IsSwitch(MapIndex) == TILE_ALLOW_BLUE_TELE_GUN;
-		int IsTeleInWeapon = GameServer()->Collision()->IsTeleportWeapon(MapIndex);
 
-		if(!IsTeleInWeapon)
-		{
-			if(IsSwitchTeleGun || IsBlueSwitchTeleGun) {
-				// Delay specifies which weapon the tile should work for.
-				// Delay = 0 means all.
-				int delay = GameServer()->Collision()->GetSwitchDelay(MapIndex);
-
-				if((delay != 3 && delay != 0) && m_Type == WEAPON_RIFLE) {
-					IsSwitchTeleGun = IsBlueSwitchTeleGun = false;
-				}
-			}
-
-			m_IsBlueTeleport = TileFIndex == TILE_ALLOW_BLUE_TELE_GUN || IsBlueSwitchTeleGun;
-
-			// Teleport is canceled if the last bounce tile is not a TILE_ALLOW_TELE_GUN.
-			// Teleport also works if laser didn't bounce.
-			m_TeleportCancelled =
-					m_Type == WEAPON_RIFLE
-					&& (TileFIndex != TILE_ALLOW_TELE_GUN
-						&& TileFIndex != TILE_ALLOW_BLUE_TELE_GUN
-						&& !IsSwitchTeleGun
-						&& !IsBlueSwitchTeleGun);
-		}
+		if (m_Type == WEAPON_RIFLE && (TileIndex == TILE_NO_TELE_GUN || TileFIndex == TILE_NO_TELE_GUN))
+			m_TeleportCancelled = true;
 	}
 
 	//m_Owner = -1;
@@ -238,14 +221,24 @@ void CLaser::Reset()
 
 void CLaser::Tick()
 {
+	CCharacter *pOwnerChar = 0;
+	if(m_Owner >= 0)
+		pOwnerChar = GameServer()->GetPlayerChar(m_Owner);
+	int Team = -1;
+	if(pOwnerChar && pOwnerChar->IsAlive())
+		Team = pOwnerChar->Team();
+	else if(m_Owner >= 0 && (!GameServer()->m_apPlayers[m_Owner] || GameServer()->m_apPlayers[m_Owner]->GetTeam() == TEAM_SPECTATORS))
+		GameServer()->m_World.DestroyEntity(this);
+	int64_t TeamMask = ((CGameControllerDDRace*)GameServer()->m_pController)->m_Teams.TeamMask(Team, -1, -1);
+
 	float Delay;
 	if (m_TuneZone)
 		Delay = GameServer()->TuningList()[m_TuneZone].m_LaserBounceDelay;
 	else
 		Delay = GameServer()->Tuning()->m_LaserBounceDelay;
 
-	if((Server()->Tick() - m_EvalTick) > (Server()->TickSpeed()*Delay/1000.0f))
-		DoBounce();
+	if(Server()->Tick() > m_EvalTick+(Server()->TickSpeed()*Delay/1000.0f))
+		DoBounce(TeamMask);
 }
 
 void CLaser::TickPaused()
@@ -264,13 +257,12 @@ void CLaser::Snap(int SnappingClient)
 		return;
 
 	CCharacter *pOwnerChar = 0;
-	int64_t TeamMask = -1LL;
-
 	if(m_Owner >= 0)
 		pOwnerChar = GameServer()->GetPlayerChar(m_Owner);
-
-	if (pOwnerChar && pOwnerChar->IsAlive())
-			TeamMask = pOwnerChar->Teams()->TeamMask(pOwnerChar->Team(), -1, m_Owner);
+	int Team = -1;
+	if(pOwnerChar && pOwnerChar->IsAlive())
+		Team = pOwnerChar->Team();
+	int64_t TeamMask = ((CGameControllerDDRace*)GameServer()->m_pController)->m_Teams.TeamMask(Team, -1, -1);
 
 	if(!CmaskIsSet(TeamMask, SnappingClient))
 		return;

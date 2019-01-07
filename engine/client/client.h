@@ -6,9 +6,7 @@
 #include <memory>
 
 #include <base/hash.h>
-#include <engine/client/http.h>
-
-#define CONNECTLINK "ddnet:"
+#include <engine/shared/http.h>
 
 class CGraph
 {
@@ -383,8 +381,6 @@ public:
 	void AutoCSV_Cleanup();
 
 	void ServerBrowserUpdate();
-
-	void HandleConnectLink(const char *pLink);
 
 	// gfx
 	void SwitchWindowScreen(int Index);

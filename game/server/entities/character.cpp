@@ -46,7 +46,6 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	m_HasTeleLaser = false;
 	m_HasTeleGrenade = false;
 	m_TeleGunTeleport = false;
-	m_IsBlueTeleGunTeleport = false;
 
 	m_pPlayer = pPlayer;
 	m_Pos = Pos;
@@ -56,6 +55,17 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	m_Core.m_ActiveWeapon = WEAPON_GUN;
 	m_Core.m_Pos = m_Pos;
 	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = &m_Core;
+
+	m_Health = 10;
+	if(g_Config.m_SvHealthAndAmmo && !g_Config.m_SvFastcap)
+		m_Armor = 0;
+	else
+		m_Armor = 10;
+	if(g_Config.m_SvFastcap && !g_Config.m_SvNoWeapons)
+	{
+		GiveWeapon(WEAPON_GRENADE);
+		SetWeapon(WEAPON_GRENADE);
+	}
 
 	m_ReckoningTick = 0;
 	mem_zero(&m_SendCore, sizeof(m_SendCore));
@@ -96,6 +106,8 @@ void CCharacter::SetWeapon(int W)
 	m_QueuedWeapon = -1;
 	m_Core.m_ActiveWeapon = W;
 	GameServer()->CreateSound(m_Pos, SOUND_WEAPON_SWITCH, Teams()->TeamMask(Team(), -1, m_pPlayer->GetCID()));
+	if(W != WEAPON_HAMMER)
+		m_ShowTimesInNames = false;
 
 	if(m_Core.m_ActiveWeapon < 0 || m_Core.m_ActiveWeapon >= NUM_WEAPONS)
 		m_Core.m_ActiveWeapon = 0;
@@ -353,9 +365,12 @@ void CCharacter::FireWeapon()
 	// check if we gonna fire
 	bool WillFire = false;
 	if(CountInput(m_LatestPrevInput.m_Fire, m_LatestInput.m_Fire).m_Presses)
+	{
 		WillFire = true;
+		m_HasFiredFirst = true;
+	}
 
-	if(FullAuto && (m_LatestInput.m_Fire&1) && m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo)
+	if((m_HasFiredFirst || m_pPlayer->m_LastDeathWeapon == WEAPON_SELF) && FullAuto && (m_LatestInput.m_Fire&1) && m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo)
 		WillFire = true;
 
 	if(!WillFire)
@@ -371,7 +386,7 @@ void CCharacter::FireWeapon()
 		if(m_PainSoundTimer<=0)
 		{
 				m_PainSoundTimer = 1 * Server()->TickSpeed();
-				GameServer()->CreateSound(m_Pos, SOUND_PLAYER_PAIN_LONG, Teams()->TeamMask(Team(), -1, m_pPlayer->GetCID()));
+				GameServer()->CreateSound(m_Pos, SOUND_WEAPON_NOAMMO, Teams()->TeamMask(Team(), -1, m_pPlayer->GetCID()));
 		}
 		return;
 	}
@@ -385,6 +400,7 @@ void CCharacter::FireWeapon()
 			// reset objects Hit
 			m_NumObjectsHit = 0;
 			GameServer()->CreateSound(m_Pos, SOUND_HAMMER_FIRE, Teams()->TeamMask(Team(), -1, m_pPlayer->GetCID()));
+			m_ShowTimesInNames = !m_ShowTimesInNames;
 
 			if (m_Hit&DISABLE_HIT_HAMMER) break;
 
@@ -592,8 +608,8 @@ void CCharacter::FireWeapon()
 
 	m_AttackTick = Server()->Tick();
 
-	/*if(m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo > 0) // -1 == unlimited
-		m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo--;*/
+	if(m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo > 0) // -1 == unlimited
+		m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo--;
 
 	if(!m_ReloadTimer)
 	{
@@ -900,6 +916,7 @@ void CCharacter::Die(int Killer, int Weapon)
 
 	// this is for auto respawn after 3 secs
 	m_pPlayer->m_DieTick = Server()->Tick();
+	m_pPlayer->m_LastDeathWeapon = Weapon;
 
 	m_Alive = false;
 	GameServer()->m_World.RemoveEntity(this);
@@ -910,98 +927,6 @@ void CCharacter::Die(int Killer, int Weapon)
 
 bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 {
-	/*m_Core.m_Vel += Force;
-
-	if(GameServer()->m_pController->IsFriendlyFire(m_pPlayer->GetCID(), From) && !g_Config.m_SvTeamdamage)
-		return false;
-
-	// m_pPlayer only inflicts half damage on self
-	if(From == m_pPlayer->GetCID())
-		Dmg = max(1, Dmg/2);
-
-	m_DamageTaken++;
-
-	// create healthmod indicator
-	if(Server()->Tick() < m_DamageTakenTick+25)
-	{
-		// make sure that the damage indicators doesn't group together
-		GameServer()->CreateDamageInd(m_Pos, m_DamageTaken*0.25f, Dmg);
-	}
-	else
-	{
-		m_DamageTaken = 0;
-		GameServer()->CreateDamageInd(m_Pos, 0, Dmg);
-	}
-
-	if(Dmg)
-	{
-		if(m_Armor)
-		{
-			if(Dmg > 1)
-			{
-				m_Health--;
-				Dmg--;
-			}
-
-			if(Dmg > m_Armor)
-			{
-				Dmg -= m_Armor;
-				m_Armor = 0;
-			}
-			else
-			{
-				m_Armor -= Dmg;
-				Dmg = 0;
-			}
-		}
-
-		m_Health -= Dmg;
-	}
-
-	m_DamageTakenTick = Server()->Tick();
-
-	// do damage Hit sound
-	if(From >= 0 && From != m_pPlayer->GetCID() && GameServer()->m_apPlayers[From])
-	{
-		int64_t Mask = CmaskOne(From);
-		for(int i = 0; i < MAX_CLIENTS; i++)
-		{
-			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->GetTeam() == TEAM_SPECTATORS && GameServer()->m_apPlayers[i]->m_SpectatorID == From)
-				Mask |= CmaskOne(i);
-		}
-		GameServer()->CreateSound(GameServer()->m_apPlayers[From]->m_ViewPos, SOUND_HIT, Mask);
-	}
-
-	// check for death
-	if(m_Health <= 0)
-	{
-		Die(From, Weapon);
-
-		// set attacker's face to happy (taunt!)
-		if (From >= 0 && From != m_pPlayer->GetCID() && GameServer()->m_apPlayers[From])
-		{
-			CCharacter *pChr = GameServer()->m_apPlayers[From]->GetCharacter();
-			if (pChr)
-			{
-				pChr->m_EmoteType = EMOTE_HAPPY;
-				pChr->m_EmoteStop = Server()->Tick() + Server()->TickSpeed();
-			}
-		}
-
-		return false;
-	}
-
-	if (Dmg > 2)
-		GameServer()->CreateSound(m_Pos, SOUND_PLAYER_PAIN_LONG);
-	else
-		GameServer()->CreateSound(m_Pos, SOUND_PLAYER_PAIN_SHORT);*/
-
-	if (Dmg)
-	{
-		m_EmoteType = EMOTE_PAIN;
-		m_EmoteStop = Server()->Tick() + 500 * Server()->TickSpeed() / 1000;
-	}
-
 	vec2 Temp = m_Core.m_Vel + Force;
 	if(Temp.x > 0 && ((m_TileIndex == TILE_STOP && m_TileFlags == ROTATION_270) || (m_TileIndexL == TILE_STOP && m_TileFlagsL == ROTATION_270) || (m_TileIndexL == TILE_STOPS && (m_TileFlagsL == ROTATION_90 || m_TileFlagsL ==ROTATION_270)) || (m_TileIndexL == TILE_STOPA) || (m_TileFIndex == TILE_STOP && m_TileFFlags == ROTATION_270) || (m_TileFIndexL == TILE_STOP && m_TileFFlagsL == ROTATION_270) || (m_TileFIndexL == TILE_STOPS && (m_TileFFlagsL == ROTATION_90 || m_TileFFlagsL == ROTATION_270)) || (m_TileFIndexL == TILE_STOPA) || (m_TileSIndex == TILE_STOP && m_TileSFlags == ROTATION_270) || (m_TileSIndexL == TILE_STOP && m_TileSFlagsL == ROTATION_270) || (m_TileSIndexL == TILE_STOPS && (m_TileSFlagsL == ROTATION_90 || m_TileSFlagsL == ROTATION_270)) || (m_TileSIndexL == TILE_STOPA)))
 		Temp.x = 0;
@@ -1012,6 +937,68 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 	if(Temp.y > 0 && ((m_TileIndex == TILE_STOP && m_TileFlags == ROTATION_0) || (m_TileIndexT == TILE_STOP && m_TileFlagsT == ROTATION_0) || (m_TileIndexT == TILE_STOPS && (m_TileFlagsT == ROTATION_0 || m_TileFlagsT == ROTATION_180)) || (m_TileIndexT == TILE_STOPA) || (m_TileFIndex == TILE_STOP && m_TileFFlags == ROTATION_0) || (m_TileFIndexT == TILE_STOP && m_TileFFlagsT == ROTATION_0) || (m_TileFIndexT == TILE_STOPS && (m_TileFFlagsT == ROTATION_0 || m_TileFFlagsT == ROTATION_180)) || (m_TileFIndexT == TILE_STOPA) || (m_TileSIndex == TILE_STOP && m_TileSFlags == ROTATION_0) || (m_TileSIndexT == TILE_STOP && m_TileSFlagsT == ROTATION_0) || (m_TileSIndexT == TILE_STOPS && (m_TileSFlagsT == ROTATION_0 || m_TileSFlagsT == ROTATION_180)) || (m_TileSIndexT == TILE_STOPA)))
 		Temp.y = 0;
 	m_Core.m_Vel = Temp;
+
+	if(g_Config.m_SvHealthAndAmmo)
+	{
+		// m_pPlayer only inflicts half damage on self
+		Dmg = max(1, Dmg/2);
+
+		m_DamageTaken++;
+
+		// create healthmod indicator
+		if(Server()->Tick() < m_DamageTakenTick+25)
+		{
+			// make sure that the damage indicators doesn't group together
+			GameServer()->CreateDamageInd(m_Pos, m_DamageTaken*0.25f, Dmg);
+		}
+		else
+		{
+			m_DamageTaken = 0;
+			GameServer()->CreateDamageInd(m_Pos, 0, Dmg);
+		}
+
+		if(Dmg)
+		{
+			if(m_Armor)
+			{
+				if(Dmg > 1)
+				{
+					m_Health--;
+					Dmg--;
+				}
+
+				if(Dmg > m_Armor)
+				{
+					Dmg -= m_Armor;
+					m_Armor = 0;
+				}
+				else
+				{
+					m_Armor -= Dmg;
+					Dmg = 0;
+				}
+			}
+
+			m_Health -= Dmg;
+		}
+
+		m_DamageTakenTick = Server()->Tick();
+
+		// check for death
+		if(m_Health <= 0)
+		{
+			Die(From, Weapon);
+			return false;
+		}
+
+		if (Dmg > 2)
+			GameServer()->CreateSound(m_Pos, SOUND_PLAYER_PAIN_LONG);
+		else
+			GameServer()->CreateSound(m_Pos, SOUND_PLAYER_PAIN_SHORT);
+	}
+
+	m_EmoteType = EMOTE_PAIN;
+	m_EmoteStop = Server()->Tick() + 500 * Server()->TickSpeed() / 1000;
 
 	return true;
 }
@@ -1440,43 +1427,19 @@ void CCharacter::HandleTiles(int Index, float FractionOfTick)
 	if(tcp)
 		m_TeleCheckpoint = tcp;
 
-	// start
-	if(((m_TileIndex == TILE_BEGIN) || (m_TileFIndex == TILE_BEGIN)) && (m_DDRaceState == DDRACE_NONE || m_DDRaceState == DDRACE_FINISHED || (m_DDRaceState == DDRACE_STARTED && !Team() && g_Config.m_SvTeam != 3)))
+	if(!g_Config.m_SvFastcap)
 	{
-		bool CanBegin = true;
-		if(g_Config.m_SvResetPickups)
-		{
-			for (int i = WEAPON_SHOTGUN; i < NUM_WEAPONS; ++i)
-			{
-				m_aWeapons[i].m_Got = false;
-				if(m_Core.m_ActiveWeapon == i)
-					m_Core.m_ActiveWeapon = WEAPON_GUN;
-			}
-		}
-		if(g_Config.m_SvTeam == 2 && (Team() == TEAM_FLOCK || Teams()->Count(Team()) <= 1))
-		{
-			if(m_LastStartWarning < Server()->Tick() - 3 * Server()->TickSpeed())
-			{
-				GameServer()->SendChatTarget(GetPlayer()->GetCID(),"Server admin requires you to be in a team and with other tees to start");
-				m_LastStartWarning = Server()->Tick();
-			}
-			Die(GetPlayer()->GetCID(), WEAPON_WORLD);
-			CanBegin = false;
-		}
-		if(CanBegin)
+		// start
+		if(((m_TileIndex == TILE_BEGIN) || (m_TileFIndex == TILE_BEGIN)) && (m_DDRaceState == DDRACE_NONE || m_DDRaceState == DDRACE_FINISHED || (m_DDRaceState == DDRACE_STARTED && !Team() && g_Config.m_SvTeam != 3)))
 		{
 			Teams()->OnCharacterStart(m_pPlayer->GetCID(), FractionOfTick);
 			m_CpActive = -2;
-		} else {
-
 		}
 
-
+		// finish
+		if(((m_TileIndex == TILE_END) || (m_TileFIndex == TILE_END)) && m_DDRaceState == DDRACE_STARTED)
+			Controller->m_Teams.OnCharacterFinish(m_pPlayer->GetCID(), FractionOfTick);
 	}
-
-	// finish
-	if(((m_TileIndex == TILE_END) || (m_TileFIndex == TILE_END)) && m_DDRaceState == DDRACE_STARTED)
-    		Controller->m_Teams.OnCharacterFinish(m_pPlayer->GetCID(), FractionOfTick);
 
 	// freeze
 	if(((m_TileIndex == TILE_FREEZE) || (m_TileFIndex == TILE_FREEZE)) && !m_Super && !m_DeepFreeze)
@@ -1945,7 +1908,7 @@ void CCharacter::HandleTiles(int Index, float FractionOfTick)
 		}
 		// if no checkpointout have been found (or if there no recorded checkpoint), teleport to start
 		vec2 SpawnPos;
-		if(GameServer()->m_pController->CanSpawn(m_pPlayer->GetTeam(), &SpawnPos))
+		if(GameServer()->m_pController->CanSpawn(m_pPlayer->GetTeam(), 0, &SpawnPos))
 		{
 			m_Core.m_Pos = SpawnPos;
 			m_Core.m_Vel = vec2(0,0);
@@ -1987,7 +1950,7 @@ void CCharacter::HandleTiles(int Index, float FractionOfTick)
 		}
 		// if no checkpointout have been found (or if there no recorded checkpoint), teleport to start
 		vec2 SpawnPos;
-		if(GameServer()->m_pController->CanSpawn(m_pPlayer->GetTeam(), &SpawnPos))
+		if(GameServer()->m_pController->CanSpawn(m_pPlayer->GetTeam(), 0, &SpawnPos))
 		{
 			m_Core.m_Pos = SpawnPos;
 
@@ -2060,7 +2023,7 @@ void CCharacter::SendZoneMsgs()
 void CCharacter::DDRaceTick()
 {
 	mem_copy(&m_Input, &m_SavedInput, sizeof(m_Input));
-	m_Armor=(m_FreezeTime >= 0)?10-(m_FreezeTime/15):0;
+	//m_Armor=(m_FreezeTime >= 0)?10-(m_FreezeTime/15):0;
 	if(m_Input.m_Direction != 0 || m_Input.m_Jump != 0)
 		m_LastMove = Server()->Tick();
 
@@ -2124,29 +2087,77 @@ void CCharacter::DDRacePostCoreTick()
 		m_Core.m_Jumped = 1;
 
 	int CurrentIndex = GameServer()->Collision()->GetMapIndex(m_Pos);
-	HandleSkippableTiles(CurrentIndex);
+
+	if (g_Config.m_SvFastcap)
+	{
+		// fastcap
+		CGameControllerDDRace* Controller = (CGameControllerDDRace*)GameServer()->m_pController;
+		float d = distance(m_PrevPos, m_Pos);
+		if(d)
+		{
+			int End = d + 1;
+			for(int i = 0; i < End; i++)
+			{
+				float FractionOfTick = i/d;
+				vec2 Pos = mix(m_PrevPos, m_Pos, FractionOfTick);
+
+				if(!m_GotFastcapFlag1 && distance(Pos, Controller->m_FastcapFlag1) < 14 + ms_PhysSize)
+				{
+					if(!m_GotFastcapFlag2)
+					{
+						Teams()->OnCharacterStart(m_pPlayer->GetCID(), FractionOfTick);
+						m_CpActive = -2;
+						GameServer()->CreateSound(m_Pos, SOUND_CTF_GRAB_PL, Teams()->TeamMask(Team(), -1, m_pPlayer->GetCID()));
+					}
+					else
+					{
+						Controller->m_Teams.OnCharacterFinish(m_pPlayer->GetCID(), FractionOfTick);
+						GetPlayer()->m_FastcapSpawnAt = 2;
+						GameServer()->CreateSound(m_Pos, SOUND_CTF_CAPTURE, Teams()->TeamMask(Team(), -1, m_pPlayer->GetCID()));
+					}
+					m_GotFastcapFlag1 = true;
+				}
+				if(!m_GotFastcapFlag2 && distance(Pos, Controller->m_FastcapFlag2) < 14 + ms_PhysSize)
+				{
+					if(!m_GotFastcapFlag1)
+					{
+						Teams()->OnCharacterStart(m_pPlayer->GetCID(), FractionOfTick);
+						m_CpActive = -2;
+						GameServer()->CreateSound(m_Pos, SOUND_CTF_GRAB_PL, Teams()->TeamMask(Team(), -1, m_pPlayer->GetCID()));
+					}
+					else
+					{
+						Controller->m_Teams.OnCharacterFinish(m_pPlayer->GetCID(), FractionOfTick);
+						GetPlayer()->m_FastcapSpawnAt = 1;
+						GameServer()->CreateSound(m_Pos, SOUND_CTF_CAPTURE, Teams()->TeamMask(Team(), -1, m_pPlayer->GetCID()));
+					}
+					m_GotFastcapFlag2 = true;
+				}
+			}
+		}
+	}
 
 	// handle Anti-Skip tiles
 	std::list< std::pair<int, float> > Indices = GameServer()->Collision()->GetMapIndices(m_PrevPos, m_Pos);
 	if(!Indices.empty())
 		for(std::list< std::pair<int, float> >::iterator i = Indices.begin(); i != Indices.end(); i++)
-        			HandleTiles(i->first, i->second);
+			HandleTiles(i->first, i->second);
 	else
 	{
 		//HandleTiles(CurrentIndex);
 	}
+
+	HandleSkippableTiles(CurrentIndex);
 
 	// teleport gun
 	if (m_TeleGunTeleport)
 	{
 		GameServer()->CreateDeath(m_Pos, m_pPlayer->GetCID(), Teams()->TeamMask(Team(), -1, m_pPlayer->GetCID()));
 		m_Core.m_Pos = m_TeleGunPos;
-		if(!m_IsBlueTeleGunTeleport)
-			m_Core.m_Vel = vec2(0, 0);
+		m_Core.m_Vel = vec2(0, 0);
 		GameServer()->CreateDeath(m_TeleGunPos, m_pPlayer->GetCID(), Teams()->TeamMask(Team(), -1, m_pPlayer->GetCID()));
 		GameServer()->CreateSound(m_TeleGunPos, SOUND_WEAPON_SPAWN, Teams()->TeamMask(Team(), -1, m_pPlayer->GetCID()));
 		m_TeleGunTeleport = false;
-		m_IsBlueTeleGunTeleport = false;
 	}
 
 	HandleBroadcast();
@@ -2154,6 +2165,7 @@ void CCharacter::DDRacePostCoreTick()
 
 bool CCharacter::Freeze(int Seconds)
 {
+	return false;
 	if ((Seconds <= 0 || m_Super || m_FreezeTime == -1 || m_FreezeTime > Seconds * Server()->TickSpeed()) && Seconds != -1)
 		 return false;
 	if (m_FreezeTick < Server()->Tick() - Server()->TickSpeed() || Seconds == -1)
@@ -2178,6 +2190,7 @@ bool CCharacter::Freeze()
 
 bool CCharacter::UnFreeze()
 {
+	return false;
 	if (m_FreezeTime > 0)
 	{
 		m_Armor=10;
@@ -2214,7 +2227,9 @@ void CCharacter::GiveWeapon(int Weapon, bool Remove)
 	}
 	else
 	{
-		if (!m_FreezeTime)
+		if (Weapon == WEAPON_GRENADE && g_Config.m_SvHealthAndAmmo)
+			m_aWeapons[Weapon].m_Ammo = g_pData->m_Weapons.m_aId[Weapon].m_Maxammo;
+		else
 			m_aWeapons[Weapon].m_Ammo = -1;
 	}
 
@@ -2273,6 +2288,9 @@ void CCharacter::DDRaceInit()
 	m_Jetpack = false;
 	m_Core.m_Jumps = 2;
 	m_FreezeHammer = false;
+	m_ShowTimesInNames = false;
+	m_GotFastcapFlag1 = false;
+	m_GotFastcapFlag2 = false;
 
 	int Team = Teams()->m_Core.Team(m_Core.m_Id);
 

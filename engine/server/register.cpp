@@ -239,9 +239,13 @@ int CRegister::RegisterProcessPacket(CNetChunk *pPacket)
 {
 	// check for masterserver address
 	bool Valid = false;
+	NETADDR Addr1 = pPacket->m_Address;
+	Addr1.port = 0;
 	for(int i = 0; i < IMasterServer::MAX_MASTERSERVERS; i++)
 	{
-		if(net_addr_comp_noport(&pPacket->m_Address, &m_aMasterserverInfo[i].m_Addr) == 0)
+		NETADDR Addr2 = m_aMasterserverInfo[i].m_Addr;
+		Addr2.port = 0;
+		if(net_addr_comp(&Addr1, &Addr2) == 0)
 		{
 			Valid = true;
 			break;

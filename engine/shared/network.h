@@ -301,7 +301,6 @@ class CNetServer
 	};
 
 	NETSOCKET m_Socket;
-	MMSGS m_MMSGS;
 	class CNetBan *m_pNetBan;
 	CSlot m_aSlots[NET_MAX_CLIENTS];
 	int m_MaxClients;
@@ -424,7 +423,6 @@ class CNetClient
 	CNetRecvUnpacker m_RecvUnpacker;
 public:
 	NETSOCKET m_Socket;
-	MMSGS m_MMSGS;
 	// openness
 	bool Open(NETADDR BindAddr, int Flags);
 	int Close();

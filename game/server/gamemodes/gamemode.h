@@ -3,6 +3,6 @@
 #ifndef GAME_SERVER_GAMEMODES_GAMEMODE_H
 #define GAME_SERVER_GAMEMODES_GAMEMODE_H
 
-#define GAME_NAME "Quadrace"
-#define TEST_NAME "TestQuadrace"
+#define GAME_NAME "Race      ddnet"
+#define TEST_NAME "TestDDraceNetwork"
 #endif // GAME_SERVER_GAMEMODES_GAMEMODE_H

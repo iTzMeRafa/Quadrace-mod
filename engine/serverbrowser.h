@@ -59,7 +59,6 @@ public:
 	char m_aVersion[32];
 	char m_aAddress[NETADDR_MAXSTRSIZE];
 	CClient m_aClients[MAX_CLIENTS];
-	mutable int m_NumFilteredPlayers;
 };
 
 bool IsVanilla(const CServerInfo *pInfo);
@@ -117,6 +116,7 @@ public:
 
 	virtual int NumServers() const = 0;
 
+	virtual int FilteredPlayers(const CServerInfo &Item) const = 0;
 	virtual int Players(const CServerInfo &Item) const = 0;
 	virtual int Max(const CServerInfo &Item) const = 0;
 

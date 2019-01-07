@@ -46,7 +46,7 @@ public:
 	}
 
 	void OnCharacterStart(int ClientID, float FractionOfTick);
-    void OnCharacterFinish(int ClientID, float FractionOfTick);
+	void OnCharacterFinish(int ClientID, float FractionOfTick);
 	void OnCharacterSpawn(int ClientID);
 	void OnCharacterDeath(int ClientID, int Weapon);
 

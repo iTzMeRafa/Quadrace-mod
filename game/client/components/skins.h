@@ -31,7 +31,6 @@ public:
 
 private:
 	sorted_array<CSkin> m_aSkins;
-	char m_EventSkinPrefix[100];
 
 	int FindImpl(const char *pName) const;
 	static int SkinScan(const char *pName, int IsDir, int DirType, void *pUser);
