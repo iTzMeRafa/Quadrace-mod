@@ -1699,13 +1699,13 @@ bool CSqlScore::LoadTeamThread(CSqlServer* pSqlServer, const CSqlData *pGameData
 	return false;
 }
 
-void CSqlScore::ProcessRecordQueue()
+/*void CSqlScore::ProcessRecordQueue()
 {
 	void *ProcessThread = thread_init(ExecSqlFunc, new CSqlExecData(ProcessRecordQueueThread, new CSqlData()));
 	thread_detach(ProcessThread);
-}
+}*/
 
-bool CSqlScore::ProcessRecordQueueThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure)
+/*bool CSqlScore::ProcessRecordQueueThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure)
 {
 	const CSqlData* pData = pGameData;
 
@@ -1743,18 +1743,18 @@ bool CSqlScore::ProcessRecordQueueThread(CSqlServer* pSqlServer, const CSqlData 
 	}
 
 	return false;
-}
+}*/
 
-void CSqlScore::InsertRecordQueue(const char *PlayerName, float Time)
+/*void CSqlScore::InsertRecordQueue(const char *PlayerName, float Time)
 {
 	CSqlScoreData *Tmp = new CSqlScoreData();
 	Tmp->m_Name = PlayerName;
 	Tmp->m_Time = Time;
 	void *InsertThread = thread_init(ExecSqlFunc, new CSqlExecData(InsertRecordQueueThread, Tmp, false));
 	thread_detach(InsertThread);
-}
+}*/
 
-bool CSqlScore::InsertRecordQueueThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure)
+/*bool CSqlScore::InsertRecordQueueThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure)
 {
         const CSqlScoreData *pData = dynamic_cast<const CSqlScoreData *>(pGameData);
 
@@ -1782,7 +1782,7 @@ bool CSqlScore::InsertRecordQueueThread(CSqlServer* pSqlServer, const CSqlData *
 	}
 
 	return false;
-}
+}*/
 
 void CSqlScore::ShowMapPoints(int ClientID, const char* pName)
 {
