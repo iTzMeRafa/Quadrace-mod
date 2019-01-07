@@ -164,7 +164,7 @@ public:
 	float m_CurrentRecord;
 	char m_CurrentRecordHolder[16];
 	void UpdateRecordFlag();
-	uint32_t m_CurrentRecordQueueId;
+	/*uint32_t m_CurrentRecordQueueId;*/
 	CCharacter *m_pRecordFlagChar;
 	vec2 m_FastcapFlag1;
 	vec2 m_FastcapFlag2;

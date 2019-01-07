@@ -44,7 +44,7 @@ IGameController::IGameController(class CGameContext *pGameServer)
 
 	m_CurrentRecord = 0;
 	m_CurrentRecordHolder[0] = 0;
-	m_CurrentRecordQueueId = 0;
+	/*m_CurrentRecordQueueId = 0;*/
 	m_pRecordFlagChar = NULL;
 	m_FastcapFlag1 = vec2(0, 0);
 	m_FastcapFlag2 = vec2(0, 0);

@@ -958,7 +958,7 @@ void CGameContext::OnTick()
 	if(m_LastProcessQueue < time_get()-time_freq())
 	{
 		m_LastProcessQueue = time_get();
-		Score()->ProcessRecordQueue();
+		/*Score()->ProcessRecordQueue();*/
 	}
 }
 

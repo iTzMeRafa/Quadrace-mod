@@ -66,8 +66,8 @@ public:
 	virtual void SaveTeam(int Team, const char *pCode, int ClientID, const char *pServer) = 0;
 	virtual void LoadTeam(const char *pCode, int ClientID) = 0;
 
-	virtual void ProcessRecordQueue() = 0;
-	virtual void InsertRecordQueue(const char *PlayerName, float Time) = 0;
+	/*virtual void ProcessRecordQueue() = 0;*/
+	/*virtual void InsertRecordQueue(const char *PlayerName, float Time) = 0;*/
 	virtual void ShowMapPoints(int ClientID, const char* pName) = 0;
 
 	// called when the server is shut down but not on mapchange/reload

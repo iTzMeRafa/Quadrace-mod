@@ -563,7 +563,7 @@ void CGameTeams::OnFinish(CPlayer* Player, float FractionOfTick)
 
 			str_copy(GameServer()->m_pController->m_CurrentRecordHolder, Server()->ClientName(Player->GetCID()), sizeof(IGameController::m_CurrentRecordHolder));
 			GameServer()->m_pController->UpdateRecordFlag();
-			GameServer()->Score()->InsertRecordQueue(Server()->ClientName(Player->GetCID()), Time);
+			/*GameServer()->Score()->InsertRecordQueue(Server()->ClientName(Player->GetCID()), Time);*/
 		}
 	}
 
