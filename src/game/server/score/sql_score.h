@@ -133,15 +133,11 @@ class CSqlScore: public IScore
 	static bool SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
 	static bool ShowRankThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
 	static bool ShowTop5Thread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
-	static bool ShowTeamRankThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
-	static bool ShowTeamTop5Thread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
 	static bool ShowTimesThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
 	static bool ShowPointsThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
 	static bool ShowTopPointsThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
 	static bool RandomMapThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
 	static bool RandomUnfinishedMapThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
-	static bool SaveTeamThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
-	static bool LoadTeamThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
 
 public:
 
@@ -154,22 +150,16 @@ public:
 	virtual void MapVote(int ClientID, const char* MapName);
 	virtual void SaveScore(int ClientID, float Time,
 			float CpTime[NUM_CHECKPOINTS], bool NotEligible);
-	virtual void SaveTeamScore(int* aClientIDs, unsigned int Size, float Time);
 	virtual void ShowRank(int ClientID, const char* pName, bool Search = false);
-	virtual void ShowTeamRank(int ClientID, const char* pName, bool Search = false);
 	virtual void ShowTimes(int ClientID, const char* pName, int Debut = 1);
 	virtual void ShowTimes(int ClientID, int Debut = 1);
 	virtual void ShowTop5(IConsole::IResult *pResult, int ClientID,
-			void *pUserData, int Debut = 1);
-	virtual void ShowTeamTop5(IConsole::IResult *pResult, int ClientID,
 			void *pUserData, int Debut = 1);
 	virtual void ShowPoints(int ClientID, const char* pName, bool Search = false);
 	virtual void ShowTopPoints(IConsole::IResult *pResult, int ClientID,
 			void *pUserData, int Debut = 1);
 	virtual void RandomMap(int ClientID, int stars);
 	virtual void RandomUnfinishedMap(int ClientID, int stars);
-	virtual void SaveTeam(int Team, const char* Code, int ClientID, const char* Server);
-	virtual void LoadTeam(const char* Code, int ClientID);
 
 	virtual void OnShutdown();
 };
