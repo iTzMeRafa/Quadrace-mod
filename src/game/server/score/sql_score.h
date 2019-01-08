@@ -109,32 +109,6 @@ struct CSqlScoreData : CSqlData
 	char m_aRequestingPlayer [MAX_NAME_LENGTH];
 };
 
-struct CSqlTeamScoreData : CSqlData
-{
-	bool m_NotEligible;
-	unsigned int m_Size;
-	int m_aClientIDs[MAX_CLIENTS];
-	sqlstr::CSqlString<MAX_NAME_LENGTH> m_aNames [MAX_CLIENTS];
-
-	float m_Time;
-};
-
-struct CSqlTeamSave : CSqlData
-{
-	virtual ~CSqlTeamSave();
-
-	int m_Team;
-	int m_ClientID;
-	sqlstr::CSqlString<128> m_Code;
-	char m_Server[5];
-};
-
-struct CSqlTeamLoad : CSqlData
-{
-	sqlstr::CSqlString<128> m_Code;
-	int m_ClientID;
-};
-
 class CSqlScore: public IScore
 {
 	CGameContext *GameServer() { return m_pGameServer; }
@@ -157,7 +131,6 @@ class CSqlScore: public IScore
 	static bool MapVoteThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
 	static bool LoadScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
 	static bool SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
-	static bool SaveTeamScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
 	static bool ShowRankThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
 	static bool ShowTop5Thread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
 	static bool ShowTeamRankThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure = false);
