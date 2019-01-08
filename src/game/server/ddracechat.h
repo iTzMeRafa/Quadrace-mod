@@ -27,8 +27,6 @@ CHAT_COMMAND("timeout", "?s[code]", CFGFLAG_CHAT|CFGFLAG_SERVER, ConTimeout, thi
 CHAT_COMMAND("save", "r[code]", CFGFLAG_CHAT|CFGFLAG_SERVER, ConSave, this, "Save team with code r to current server. To save to another server, use '/save s r' where s = server (case-sensitive: GER, RUS, etc) and r = code")
 CHAT_COMMAND("load", "r[code]", CFGFLAG_CHAT|CFGFLAG_SERVER, ConLoad, this, "Load with code r")
 CHAT_COMMAND("map", "?r[map]", CFGFLAG_CHAT|CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, ConMap, this, "Vote a map by name")
-CHAT_COMMAND("rankteam", "?r[player name]", CFGFLAG_CHAT|CFGFLAG_SERVER, ConTeamRank, this, "Shows the team rank of player with name r (your team rank by default)")
-CHAT_COMMAND("teamrank", "?r[player name]", CFGFLAG_CHAT|CFGFLAG_SERVER, ConTeamRank, this, "Shows the team rank of player with name r (your team rank by default)")
 CHAT_COMMAND("rank", "?r[player name]", CFGFLAG_CHAT|CFGFLAG_SERVER, ConRank, this, "Shows the rank of player with name r (your rank by default)")
 CHAT_COMMAND("rules", "", CFGFLAG_CHAT|CFGFLAG_SERVER, ConRules, this, "Shows the server rules")
 CHAT_COMMAND("team", "?i[id]", CFGFLAG_CHAT|CFGFLAG_SERVER, ConJoinTeam, this, "Lets you join team i (shows your team if left blank)")

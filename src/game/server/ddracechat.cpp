@@ -368,12 +368,6 @@ void CGameContext::ConTeamTop5(IConsole::IResult *pResult, void *pUserData)
 		return;
 	}
 
-	if (pResult->NumArguments() > 0)
-		pSelf->Score()->ShowTeamTop5(pResult, pResult->m_ClientID, pUserData,
-				pResult->GetInteger(0));
-	else
-		pSelf->Score()->ShowTeamTop5(pResult, pResult->m_ClientID, pUserData);
-
 #if defined(CONF_SQL)
 	if(pSelf->m_apPlayers[pResult->m_ClientID] && g_Config.m_SvUseSQL)
 		pSelf->m_apPlayers[pResult->m_ClientID]->m_LastSQLQuery = pSelf->Server()->Tick();
@@ -624,21 +618,6 @@ void CGameContext::ConSave(IConsole::IResult *pResult, void *pUserData)
 	str_copy(aValidServerNames, g_Config.m_SvSqlValidServerNames, sizeof(aValidServerNames));
 	char *p = strtok(aValidServerNames, ",");;
 
-	while(p)
-	{
-		if(str_comp(p, aCountry) == 0)
-		{
-			pSelf->Score()->SaveTeam(Team, pCode, pResult->m_ClientID, aCountry);
-
-			if(g_Config.m_SvUseSQL)
-				pPlayer->m_LastSQLQuery = pSelf->Server()->Tick();
-
-			return;
-		}
-
-		p = strtok(NULL, ",");
-	}
-
 	char aBuf[128];
 	str_format(aBuf, sizeof(aBuf), "Unknown server name '%s'.", aCountry);
 	pSelf->SendChatTarget(pResult->m_ClientID, aBuf);
@@ -668,45 +647,17 @@ void CGameContext::ConLoad(IConsole::IResult *pResult, void *pUserData)
 			return;
 #endif
 
-	if (pResult->NumArguments() > 0)
-		pSelf->Score()->LoadTeam(pResult->GetString(0), pResult->m_ClientID);
-	else
-		return;
-
 #if defined(CONF_SQL)
 	if(g_Config.m_SvUseSQL)
 		pPlayer->m_LastSQLQuery = pSelf->Server()->Tick();
 #endif
 }
 
-void CGameContext::ConTeamRank(IConsole::IResult *pResult, void *pUserData)
-{
-	CGameContext *pSelf = (CGameContext *) pUserData;
-	if (!CheckClientID(pResult->m_ClientID))
-		return;
-
-	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientID];
-	if (!pPlayer)
-		return;
-
 #if defined(CONF_SQL)
 	if(g_Config.m_SvUseSQL)
 		if(pPlayer->m_LastSQLQuery + g_Config.m_SvSqlQueriesDelay * pSelf->Server()->TickSpeed() >= pSelf->Server()->Tick())
 			return;
 #endif
-
-	if (pResult->NumArguments() > 0)
-		if (!g_Config.m_SvHideScore)
-			pSelf->Score()->ShowTeamRank(pResult->m_ClientID, pResult->GetString(0),
-					true);
-		else
-			pSelf->Console()->Print(
-					IConsole::OUTPUT_LEVEL_STANDARD,
-					"teamrank",
-					"Showing the team rank of other players is not allowed on this server.");
-	else
-		pSelf->Score()->ShowTeamRank(pResult->m_ClientID,
-				pSelf->Server()->ClientName(pResult->m_ClientID));
 
 #if defined(CONF_SQL)
 	if(g_Config.m_SvUseSQL)
