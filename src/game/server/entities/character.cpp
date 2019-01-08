@@ -400,7 +400,7 @@ void CCharacter::FireWeapon()
 			// reset objects Hit
 			m_NumObjectsHit = 0;
 			GameServer()->CreateSound(m_Pos, SOUND_HAMMER_FIRE, Teams()->TeamMask(Team(), -1, m_pPlayer->GetCID()));
-			m_ShowTimesInNames = !m_ShowTimesInNames;
+			m_ShowTimesInNames = false;
 
 			if (m_Hit&DISABLE_HIT_HAMMER) break;
 
