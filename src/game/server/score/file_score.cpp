@@ -86,7 +86,7 @@ void CFileScore::SaveScoreThread(void *pUser)
 			}
 			t++;
 			if (t % 50 == 0)
-				thread_sleep(1000);
+				thread_sleep(1);
 		}
 	}
 	f.close();
@@ -231,7 +231,7 @@ void CFileScore::SaveTeamScore(int* ClientIDs, unsigned int Size, float Time)
 }
 
 void CFileScore::SaveScore(int ClientID, float Time,
-		float CpTime[NUM_CHECKPOINTS], bool NotEligible)
+		float CpTime[NUM_CHECKPOINTS], float CurrentRecord)
 {
 	CConsole* pCon = (CConsole*) GameServer()->Console();
 	if (!pCon->m_Cheated || g_Config.m_SvRankCheats)
@@ -299,6 +299,20 @@ void CFileScore::ShowRank(int ClientID, const char* pName, bool Search)
 	GameServer()->SendChatTarget(ClientID, aBuf);
 }
 
+void CFileScore::ShowTeamTop5(IConsole::IResult *pResult, int ClientID, void *pUserData, int Debut)
+{
+	char aBuf[512];
+	str_format(aBuf, sizeof(aBuf), "Team ranks not supported in file based servers");
+	GameServer()->SendChatTarget(ClientID, aBuf);
+}
+
+void CFileScore::ShowTeamRank(int ClientID, const char* pName, bool Search)
+{
+	char aBuf[512];
+	str_format(aBuf, sizeof(aBuf), "Team ranks not supported in file based servers");
+	GameServer()->SendChatTarget(ClientID, aBuf);
+}
+
 void CFileScore::ShowTopPoints(IConsole::IResult *pResult, int ClientID, void *pUserData, int Debut)
 {
 	char aBuf[512];
@@ -328,6 +342,13 @@ void CFileScore::RandomUnfinishedMap(int ClientID, int stars)
 }
 
 void CFileScore::SaveTeam(int Team, const char* Code, int ClientID, const char* Server)
+{
+	char aBuf[512];
+	str_format(aBuf, sizeof(aBuf), "Save-function not supported in file based servers");
+	GameServer()->SendChatTarget(ClientID, aBuf);
+}
+
+void CFileScore::LoadTeam(const char* Code, int ClientID)
 {
 	char aBuf[512];
 	str_format(aBuf, sizeof(aBuf), "Save-function not supported in file based servers");
