@@ -299,13 +299,6 @@ void CFileScore::ShowRank(int ClientID, const char* pName, bool Search)
 	GameServer()->SendChatTarget(ClientID, aBuf);
 }
 
-void CFileScore::ShowTeamTop5(IConsole::IResult *pResult, int ClientID, void *pUserData, int Debut)
-{
-	char aBuf[512];
-	str_format(aBuf, sizeof(aBuf), "Team ranks not supported in file based servers");
-	GameServer()->SendChatTarget(ClientID, aBuf);
-}
-
 void CFileScore::ShowTopPoints(IConsole::IResult *pResult, int ClientID, void *pUserData, int Debut)
 {
 	char aBuf[512];
