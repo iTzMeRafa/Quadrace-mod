@@ -454,8 +454,7 @@ void CGameTeams::OnTeamFinish(CPlayer** Players, unsigned int Size)
 		}
 	}
 
-	if (CallSaveScore && Size >= 2)
-		GameServer()->Score()->SaveTeamScore(PlayerCIDs, Size, Time);
+
 }
 
 void CGameTeams::OnFinish(CPlayer* Player, float FractionOfTick)
