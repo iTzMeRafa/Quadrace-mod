@@ -50,9 +50,9 @@ CHAT_COMMAND("saytimeall", "", CFGFLAG_CHAT|CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORI
 CHAT_COMMAND("kill", "", CFGFLAG_CHAT|CFGFLAG_SERVER, ConProtectedKill, this, "Kill yourself")
 
 //CHAT_COMMAND("modhelp", "r[message]", CFGFLAG_CHAT|CFGFLAG_SERVER, ConModhelp, this, "Request the help of a moderator with a description of the problem")
-CHAT_COMMAND("showflag", "?i['0'|'1']", CFGFLAG_CHAT|CFGFLAG_SERVER, ConShowFlag, this, "Wether to show your own record flag or not (on by default)")
-CHAT_COMMAND("red", "", CFGFLAG_CHAT|CFGFLAG_SERVER, ConRed, this, "Change to red side on Fastcap")
-CHAT_COMMAND("blue", "", CFGFLAG_CHAT|CFGFLAG_SERVER, ConBlue, this, "Change to blue side on Fastcap")
+//CHAT_COMMAND("showflag", "?i['0'|'1']", CFGFLAG_CHAT|CFGFLAG_SERVER, ConShowFlag, this, "Wether to show your own record flag or not (on by default)")
+//CHAT_COMMAND("red", "", CFGFLAG_CHAT|CFGFLAG_SERVER, ConRed, this, "Change to red side on Fastcap")
+//CHAT_COMMAND("blue", "", CFGFLAG_CHAT|CFGFLAG_SERVER, ConBlue, this, "Change to blue side on Fastcap")
 
 #if defined(CONF_SQL)
 //CHAT_COMMAND("times", "?s[player name] ?i[number of times to skip]", CFGFLAG_CHAT|CFGFLAG_SERVER, ConTimes, this, "/times ?s?i shows last 5 times of the server or of a player beginning with name s starting with time i (i = 1 by default)")

@@ -1245,7 +1245,8 @@ bool CSqlScore::ShowPointsThread(CSqlServer* pSqlServer, const CSqlData *pGameDa
 
 		if(pSqlServer->GetResults()->rowsCount() != 1)
 		{
-			str_format(aBuf, sizeof(aBuf), "%s Points: 0", pData->m_Name.Str());
+			//str_format(aBuf, sizeof(aBuf), "%s Points: 0", pData->m_Name.Str());
+			str_format(aBuf, sizeof(aBuf), "Quadrace does not have a point system yet :(");
 			pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
 		}
 		else
@@ -1253,7 +1254,8 @@ bool CSqlScore::ShowPointsThread(CSqlServer* pSqlServer, const CSqlData *pGameDa
 			pSqlServer->GetResults()->next();
 			int count = (int)pSqlServer->GetResults()->getInt("Points");
 			int rank = (int)pSqlServer->GetResults()->getInt("Rank");
-			str_format(aBuf, sizeof(aBuf), "%d. %s Points: %d, requested by %s", rank, pSqlServer->GetResults()->getString("Name").c_str(), count, pData->m_aRequestingPlayer);
+			//str_format(aBuf, sizeof(aBuf), "%d. %s Points: %d, requested by %s", rank, pSqlServer->GetResults()->getString("Name").c_str(), count, pData->m_aRequestingPlayer);
+			str_format(aBuf, sizeof(aBuf), "Quadrace does not have a point system yet :(");
 			pData->GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf, pData->m_ClientID);
 		}
 
@@ -1304,14 +1306,15 @@ bool CSqlScore::ShowTopPointsThread(CSqlServer* pSqlServer, const CSqlData *pGam
 		pSqlServer->executeSqlQuery(aBuf);
 
 		// show top points
-		pData->GameServer()->SendChatTarget(pData->m_ClientID, "-------- Top Points --------");
+		pData->GameServer()->SendChatTarget(pData->m_ClientID, "~~~~~~~~ Top Quadracers ~~~~~~~~");
 
-		while(pSqlServer->GetResults()->next())
+        str_format(aBuf, sizeof(aBuf), "( ͡° ͜ʖ ͡°)");
+		/*while(pSqlServer->GetResults()->next())
 		{
 			str_format(aBuf, sizeof(aBuf), "%d. %s Points: %d", pSqlServer->GetResults()->getInt("Rank"), pSqlServer->GetResults()->getString("Name").c_str(), pSqlServer->GetResults()->getInt("Points"));
 			pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
-		}
-		pData->GameServer()->SendChatTarget(pData->m_ClientID, "-------------------------------");
+		}*/
+		pData->GameServer()->SendChatTarget(pData->m_ClientID, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
 		dbg_msg("sql", "Showing toppoints done");
 		return true;
@@ -1817,7 +1820,8 @@ bool CSqlScore::ShowMapPointsThread(CSqlServer* pSqlServer, const CSqlData *pGam
 			float PlayerTime = (float)pSqlServer->GetResults()->getDouble("Time");
 			float BestTime = ((CGameControllerDDRace*)pData->GameServer()->m_pController)->m_CurrentRecord;
 			float Slower = PlayerTime / BestTime - 1.0f;
-			str_format(aBuf, sizeof(aBuf), "%s is %0.2f%% slower than map record, Points: %d", pData->m_Name.Str(), Slower*100.0f, (int)(100.0f*exp(-pData->GameServer()->m_MapS*Slower)));
+			//str_format(aBuf, sizeof(aBuf), "%s is %0.2f%% slower than map record, Points: %d", pData->m_Name.Str(), Slower*100.0f, (int)(100.0f*exp(-pData->GameServer()->m_MapS*Slower)));
+			str_format(aBuf, sizeof(aBuf), "%s is %0.2f%% slower than map record", pData->m_Name.Str(), Slower*100.0f);
 		}
 		pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
 
