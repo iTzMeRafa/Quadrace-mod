@@ -647,17 +647,10 @@ void CGameContext::ConLoad(IConsole::IResult *pResult, void *pUserData)
 			return;
 #endif
 
-#if defined(CONF_SQL)
-	if(g_Config.m_SvUseSQL)
-		pPlayer->m_LastSQLQuery = pSelf->Server()->Tick();
-#endif
-}
-
-#if defined(CONF_SQL)
-	if(g_Config.m_SvUseSQL)
-		if(pPlayer->m_LastSQLQuery + g_Config.m_SvSqlQueriesDelay * pSelf->Server()->TickSpeed() >= pSelf->Server()->Tick())
-			return;
-#endif
+	if (pResult->NumArguments() > 0)
+		pSelf->Score()->LoadTeam(pResult->GetString(0), pResult->m_ClientID);
+	else
+		return;
 
 #if defined(CONF_SQL)
 	if(g_Config.m_SvUseSQL)
