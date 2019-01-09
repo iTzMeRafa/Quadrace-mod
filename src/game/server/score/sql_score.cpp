@@ -196,10 +196,10 @@ bool CSqlScore::CheckBirthdayThread(CSqlServer* pSqlServer, const CSqlData *pGam
 		if(pSqlServer->GetResults()->next())
 		{
 			int yearsAgo = (int)pSqlServer->GetResults()->getInt("YearsAgo");
-			str_format(aBuf, sizeof(aBuf), "Happy Unique birthday to %s for finishing their first map %d year%s ago!", pData->m_Name.Str(), yearsAgo, yearsAgo > 1 ? "s" : "");
+			str_format(aBuf, sizeof(aBuf), "Happy Quadrace birthday to %s for finishing their first map %d year%s ago!", pData->m_Name.Str(), yearsAgo, yearsAgo > 1 ? "s" : "");
 			pData->GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf, pData->m_ClientID);
 
-			str_format(aBuf, sizeof(aBuf), "Happy Unique birthday, %s!\nYou have finished your first map exactly %d year%s ago!", pData->m_Name.Str(), yearsAgo, yearsAgo > 1 ? "s" : "");
+			str_format(aBuf, sizeof(aBuf), "Happy Quadrace birthday, %s!\nYou have finished your first map exactly %d year%s ago!", pData->m_Name.Str(), yearsAgo, yearsAgo > 1 ? "s" : "");
 
 			pData->GameServer()->SendBroadcast(aBuf, pData->m_ClientID);
 		}
@@ -634,12 +634,13 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
         pSqlServer->executeSqlQuery(aBuf);
             if(pSqlServer->GetResults()->rowsCount() > 0)
             {
-               dbg_msg("sql", "Einträge gefunden");
+               dbg_msg("sql", "Einträge gelöscht");
+               str_format(aBuf, sizeof(aBuf), "DELETE FROM %s_playermappoints WHERE Name = '%s' AND Map = '%s';", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr());
+               pSqlServer->executeSql(aBuf);
             }
             else {
-            dbg_msg("sql", "Einträge NICHT gefunden");
-             str_format(aBuf, sizeof(aBuf), "DELETE FROM %s_playermappoints WHERE Name = '%s' AND Map = '%s';", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr());
-             pSqlServer->executeSql(aBuf);
+                dbg_msg("sql", "Einträge NICHT gefunden");
+
             }
 
         str_format(aBuf, sizeof(aBuf), "INSERT INTO %s_playermappoints(Name, Map, Points) VALUES ('%s', '%s', '%d') ON duplicate key UPDATE Name=VALUES(Name), Points=VALUES(Points);", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr(), Points);
@@ -1839,8 +1840,11 @@ bool CSqlScore::ShowMapPointsThread(CSqlServer* pSqlServer, const CSqlData *pGam
 			float PlayerTime = (float)pSqlServer->GetResults()->getDouble("Time");
 			float BestTime = ((CGameControllerDDRace*)pData->GameServer()->m_pController)->m_CurrentRecord;
 			float Slower = PlayerTime / BestTime - 1.0f;
+			str_format(aBuf, sizeof(aBuf), "SELECT Points FROM %s_playermappoints WHERE Name = '%s' AND Map = '%s';", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr());
+            pSqlServer->executeSqlQuery(aBuf);
+            int Points = (int)pSqlServer->GetResults()->getInt("Points");
 			//str_format(aBuf, sizeof(aBuf), "%s is %0.2f%% slower than map record, Points: %d", pData->m_Name.Str(), Slower*100.0f, (int)(100.0f*exp(-pData->GameServer()->m_MapS*Slower)));
-			str_format(aBuf, sizeof(aBuf), "%s is %0.2f%% slower than map record", pData->m_Name.Str(), Slower*100.0f);
+			str_format(aBuf, sizeof(aBuf), "%s is %0.2f%% slower than map record, Points: %d", pData->m_Name.Str(), Slower*100.0f, Points);
 		}
 		pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
 
