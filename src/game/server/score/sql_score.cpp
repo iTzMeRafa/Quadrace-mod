@@ -565,7 +565,7 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
             pSqlServer->executeSqlQuery(aBuf);
             pSqlServer->GetResults()->next();
 			int Rank = (int)pSqlServer->GetResults()->getInt("Rank");
-			pData->GameServer()->SendBroadcast(std::to_string(Rank), -1);
+			dbg_msg("sql", "Rank: %f", Rank);
 			int Points = 0;
 				switch(Rank)
 				{
