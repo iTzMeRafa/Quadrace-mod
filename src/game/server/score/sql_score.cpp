@@ -632,10 +632,14 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
 
         str_format(aBuf, sizeof(aBuf), "SELECT * FROM %s_playermappoints WHERE Name = %s AND Map = %s;", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr());
         pSqlServer->executeSqlQuery(aBuf);
-            if(pSqlServer->GetResults()->rowsCount() != 0)
+            if(pSqlServer->GetResults()->rowsCount() > 0)
             {
-                str_format(aBuf, sizeof(aBuf), "DELETE FROM %s_playermappoints WHERE Name = %s AND Map = %s;", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr());
-                pSqlServer->executeSql(aBuf);
+               dbg_msg("sql", "Einträge gefunden");
+            }
+            else {
+            dbg_msg("sql", "Einträge NICHT gefunden");
+             str_format(aBuf, sizeof(aBuf), "DELETE FROM %s_playermappoints WHERE Name = %s AND Map = %s;", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr());
+             pSqlServer->executeSql(aBuf);
             }
 
         str_format(aBuf, sizeof(aBuf), "INSERT INTO %s_playermappoints(Name, Map, Points) VALUES ('%s', '%s', '%d') ON duplicate key UPDATE Name=VALUES(Name), Points=VALUES(Points);", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr(), Points);
