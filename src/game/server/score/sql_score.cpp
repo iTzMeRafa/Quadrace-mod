@@ -628,8 +628,10 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
 
 				}
 
+				dbg_msg("sql", "Points: %d", Points);
+
         str_format(aBuf, sizeof(aBuf), "DELETE FROM %s_playermappoints WHERE Name = %s AND Map = %s;", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr());
-        str_format(aBuf, sizeof(aBuf), "INSERT INTO %s_playermappoints(Name, Map, Points) VALUES ('%s', '%s', '%f') ON duplicate key UPDATE Name=VALUES(Name), Points=VALUES(Points);", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr(), Points);
+        str_format(aBuf, sizeof(aBuf), "INSERT INTO %s_playermappoints(Name, Map, Points) VALUES ('%s', '%s', '%d') ON duplicate key UPDATE Name=VALUES(Name), Points=VALUES(Points);", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr(), Points);
         pSqlServer->executeSql(aBuf);
 
 		return true;
