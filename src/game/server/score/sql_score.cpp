@@ -630,7 +630,7 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
 
 				dbg_msg("sql", "Points: %d", Points);
 
-        str_format(aBuf, sizeof(aBuf), "SELECT * FROM %s_playermappoints WHERE Name = %s AND Map = %s;", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr());
+        str_format(aBuf, sizeof(aBuf), "SELECT * FROM %s_playermappoints WHERE Name = '%s' AND Map = '%s';", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr());
         pSqlServer->executeSqlQuery(aBuf);
             if(pSqlServer->GetResults()->rowsCount() > 0)
             {
@@ -638,7 +638,7 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
             }
             else {
             dbg_msg("sql", "Einträge NICHT gefunden");
-             str_format(aBuf, sizeof(aBuf), "DELETE FROM %s_playermappoints WHERE Name = %s AND Map = %s;", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr());
+             str_format(aBuf, sizeof(aBuf), "DELETE FROM %s_playermappoints WHERE Name = '%s' AND Map = '%s';", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr());
              pSqlServer->executeSql(aBuf);
             }
 
