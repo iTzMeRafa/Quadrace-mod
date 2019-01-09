@@ -565,6 +565,7 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
             pSqlServer->executeSqlQuery(aBuf);
             pSqlServer->GetResults()->next();
 			int Rank = (int)pSqlServer->GetResults()->getInt("Rank");
+			pData->GameServer()->SendBroadcast(Rank, -1);
 			int Points = 0;
 				switch(Rank)
 				{
@@ -620,7 +621,7 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
 					case 50: Points = 1; break;
 
 				}
-                str_format(aBuf, sizeof(aBuf), "INSERT INTO %s_playermappoints(Name, Map, Points) VALUES ('%s', '%d', '%f') ON duplicate key UPDATE Name=VALUES(Name), Points=VALUES(Points);", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr(), Points );
+                str_format(aBuf, sizeof(aBuf), "INSERT INTO %s_playermappoints(Name, Map, Points) VALUES ('%s', '%d', '%f') ON duplicate key UPDATE Name=VALUES(Name), Points=VALUES(Points);", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr(), Points);
                 pSqlServer->executeSql(aBuf);
 
 
@@ -1308,16 +1309,22 @@ bool CSqlScore::ShowTopPointsThread(CSqlServer* pSqlServer, const CSqlData *pGam
 		pSqlServer->executeSql("SET @prev := NULL;");
 		pSqlServer->executeSql("SET @rank := 1;");
 		pSqlServer->executeSql("SET @pos := 0;");
-		str_format(aBuf, sizeof(aBuf), "SELECT Rank, Points, Name FROM (SELECT Name, (@pos := @pos+1) pos, (@rank := IF(@prev = Points,@rank, @pos)) Rank, (@prev := Points) Points FROM (SELECT Name, Points FROM %s_points WHERE Points > 0 GROUP BY Name ORDER BY Points DESC) as a) as b ORDER BY Rank %s LIMIT %d, 5;", pSqlServer->GetPrefix(), pOrder, LimitStart);
+		str_format(aBuf, sizeof(aBuf), "SELECT Rank, Points, Name FROM (SELECT Name, (@pos := @pos+1) pos, (@rank := IF(@prev = Points,@rank, @pos)) Rank, (@prev := Points) Points FROM (SELECT Name, SUM(Points) FROM %s_points WHERE Points > 0 GROUP BY Name ORDER BY Points DESC) as a) as b ORDER BY Rank %s LIMIT %d, 5;", pSqlServer->GetPrefix(), pOrder, LimitStart);
 
 		pSqlServer->executeSqlQuery(aBuf);
 
 		// show top points
 		pData->GameServer()->SendChatTarget(pData->m_ClientID, "~~~~~~~~ Top Quadracers ~~~~~~~~");
+		int loop = 1;
 		while(pSqlServer->GetResults()->next())
 		{
-			str_format(aBuf, sizeof(aBuf), "%d. %s Points: %d", pSqlServer->GetResults()->getInt("Rank"), pSqlServer->GetResults()->getString("Name").c_str(), pSqlServer->GetResults()->getInt("Points"));
+		if(loop == 1) {
+			str_format(aBuf, sizeof(aBuf), "★ %d. %s Points: %d", pSqlServer->GetResults()->getInt("Rank"), pSqlServer->GetResults()->getString("Name").c_str(), pSqlServer->GetResults()->getInt("Points"));
 			pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
+        }
+            str_format(aBuf, sizeof(aBuf), "%d. %s Points: %d", pSqlServer->GetResults()->getInt("Rank"), pSqlServer->GetResults()->getString("Name").c_str(), pSqlServer->GetResults()->getInt("Points"));
+            pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
+			loop++;
 		}
         pData->GameServer()->SendChatTarget(pData->m_ClientID, "( ͡° ͜ʖ ͡°)");
         pData->GameServer()->SendChatTarget(pData->m_ClientID, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
