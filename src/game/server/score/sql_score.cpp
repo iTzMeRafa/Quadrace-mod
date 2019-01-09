@@ -561,6 +561,18 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
     		dbg_msg("sql", "Updating time done");
 
 
+              str_format(aBuf, sizeof(aBuf), "SELECT * FROM %s_playermappoints WHERE Map = '%s';", pSqlServer->GetPrefix(), pData->m_Map.ClrStr());
+                pSqlServer->executeSqlQuery(aBuf);
+                    if(pSqlServer->GetResults()->rowsCount() > 0)
+                    {
+                       dbg_msg("sql", "Einträge gelöscht");
+                       str_format(aBuf, sizeof(aBuf), "DELETE FROM %s_playermappoints WHERE Map = '%s';", pSqlServer->GetPrefix(), pData->m_Map.ClrStr());
+                       pSqlServer->executeSql(aBuf);
+                    }
+                    else {
+                        dbg_msg("sql", "Einträge NICHT gefunden");
+
+                    }
 
             pSqlServer->executeSql("SET @prev := NULL;");
             		pSqlServer->executeSql("SET @rank := 1;");
@@ -631,18 +643,7 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
 
                     dbg_msg("sql", "Points: %d", Points);
 
-                    str_format(aBuf, sizeof(aBuf), "SELECT * FROM %s_playermappoints WHERE Map = '%s';", pSqlServer->GetPrefix(), pData->m_Map.ClrStr());
-                    pSqlServer->executeSqlQuery(aBuf);
-                        if(pSqlServer->GetResults()->rowsCount() > 0)
-                        {
-                           dbg_msg("sql", "Einträge gelöscht");
-                           str_format(aBuf, sizeof(aBuf), "DELETE FROM %s_playermappoints WHERE Map = '%s';", pSqlServer->GetPrefix(), pData->m_Map.ClrStr());
-                           pSqlServer->executeSql(aBuf);
-                        }
-                        else {
-                            dbg_msg("sql", "Einträge NICHT gefunden");
 
-                        }
 
                     str_format(aBuf, sizeof(aBuf), "INSERT INTO %s_playermappoints(Name, Map, Points) VALUES ('%s', '%s', '%d') ON duplicate key UPDATE Name=VALUES(Name), Points=VALUES(Points);", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr(), Points);
                     pSqlServer->executeSql(aBuf);
