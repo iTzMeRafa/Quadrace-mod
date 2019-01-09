@@ -558,8 +558,6 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
 		float OldTime;
 		if(!FirstRank)
 			OldTime = pSqlServer->GetResults()->getDouble("Time");
-		if(FirstRank || pData->m_Time < OldTime)
-		{
 			pSqlServer->executeSql("SET @prev := NULL;");
             		pSqlServer->executeSql("SET @rank := 1;");
             		pSqlServer->executeSql("SET @pos := 0;");
@@ -624,7 +622,6 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
 				}
                 str_format(aBuf, sizeof(aBuf), "INSERT INTO %s_playermappoints(Name, Map, Points) VALUES ('%s', '%d', '%f') ON duplicate key UPDATE Name=VALUES(Name), Points=VALUES(Points);", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr(), Points );
                 pSqlServer->executeSql(aBuf);
-		}
 
 
 		// if no entry found... create a new one
@@ -1250,7 +1247,7 @@ bool CSqlScore::ShowPointsThread(CSqlServer* pSqlServer, const CSqlData *pGameDa
 		pSqlServer->executeSql("SET @pos := 0;");
 
 		char aBuf[512];
-		str_format(aBuf, sizeof(aBuf), "SELECT Rank, Points, Name FROM (SELECT Name, (@pos := @pos+1) pos, (@rank := IF(@prev = Points, @rank, @pos)) Rank, (@prev := Points) Points FROM (SELECT Name, Points FROM %s_points WHERE Points > 0 GROUP BY Name ORDER BY Points DESC) as a) as b where Name = '%s';", pSqlServer->GetPrefix(), pData->m_Name.ClrStr());
+		str_format(aBuf, sizeof(aBuf), "SELECT Rank, SUM(Points), Name FROM (SELECT Name, (@pos := @pos+1) pos, (@rank := IF(@prev = Points, @rank, @pos)) Rank, (@prev := Points) SUM(Points) FROM (SELECT Name, SUM(Points) FROM %s_playermappoints WHERE SUM(Points) > 0 GROUP BY Name ORDER BY SUM(Points) DESC) as a) as b where Name = '%s';", pSqlServer->GetPrefix(), pData->m_Name.ClrStr());
 		pSqlServer->executeSqlQuery(aBuf);
 
 		if(pSqlServer->GetResults()->rowsCount() != 1)
