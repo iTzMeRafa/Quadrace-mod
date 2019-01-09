@@ -550,13 +550,21 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
 
 	try
 	{
+
+	        // if no entry found... create a new one
+    		str_format(aBuf, sizeof(aBuf), "INSERT IGNORE INTO %s_race(Map, Name, Timestamp, Time, Server, cp1, cp2, cp3, cp4, cp5, cp6, cp7, cp8, cp9, cp10, cp11, cp12, cp13, cp14, cp15, cp16, cp17, cp18, cp19, cp20, cp21, cp22, cp23, cp24, cp25, GameID) VALUES ('%s', '%s', CURRENT_TIMESTAMP(), '%.3f', '%s', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%s');", pSqlServer->GetPrefix(), pData->m_Map.ClrStr(), pData->m_Name.ClrStr(), pData->m_Time, g_Config.m_SvSqlServerName, pData->m_aCpCurrent[0], pData->m_aCpCurrent[1], pData->m_aCpCurrent[2], pData->m_aCpCurrent[3], pData->m_aCpCurrent[4], pData->m_aCpCurrent[5], pData->m_aCpCurrent[6], pData->m_aCpCurrent[7], pData->m_aCpCurrent[8], pData->m_aCpCurrent[9], pData->m_aCpCurrent[10], pData->m_aCpCurrent[11], pData->m_aCpCurrent[12], pData->m_aCpCurrent[13], pData->m_aCpCurrent[14], pData->m_aCpCurrent[15], pData->m_aCpCurrent[16], pData->m_aCpCurrent[17], pData->m_aCpCurrent[18], pData->m_aCpCurrent[19], pData->m_aCpCurrent[20], pData->m_aCpCurrent[21], pData->m_aCpCurrent[22], pData->m_aCpCurrent[23], pData->m_aCpCurrent[24], pData->m_GameUuid.ClrStr());
+    		dbg_msg("sql", "%s", aBuf);
+    		pSqlServer->executeSql(aBuf);
+
+    		dbg_msg("sql", "Updating time done");
+
 		char aBuf[768];
 
 		str_format(aBuf, sizeof(aBuf), "SELECT * FROM %s_race WHERE Map='%s' AND Name='%s' ORDER BY time ASC LIMIT 1;", pSqlServer->GetPrefix(), pData->m_Map.ClrStr(), pData->m_Name.ClrStr());
 		pSqlServer->executeSqlQuery(aBuf);
 		bool FirstRank = !pSqlServer->GetResults()->next();
 		float OldTime;
-		if(!FirstRank)
+
 			OldTime = pSqlServer->GetResults()->getDouble("Time");
 			pSqlServer->executeSql("SET @prev := NULL;");
             		pSqlServer->executeSql("SET @rank := 1;");
@@ -621,16 +629,11 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
 					case 50: Points = 1; break;
 
 				}
-                str_format(aBuf, sizeof(aBuf), "INSERT INTO %s_playermappoints(Name, Map, Points) VALUES ('%s', '%s', '%f') ON duplicate key UPDATE Name=VALUES(Name), Points=VALUES(Points);", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr(), Points);
-                pSqlServer->executeSql(aBuf);
 
+        str_format(aBuf, sizeof(aBuf), "DELETE FROM %s_playermappoints WHERE Name = %s AND Map = %s;", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr());
+        str_format(aBuf, sizeof(aBuf), "INSERT INTO %s_playermappoints(Name, Map, Points) VALUES ('%s', '%s', '%f') ON duplicate key UPDATE Name=VALUES(Name), Points=VALUES(Points);", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr(), Points);
+        pSqlServer->executeSql(aBuf);
 
-		// if no entry found... create a new one
-		str_format(aBuf, sizeof(aBuf), "INSERT IGNORE INTO %s_race(Map, Name, Timestamp, Time, Server, cp1, cp2, cp3, cp4, cp5, cp6, cp7, cp8, cp9, cp10, cp11, cp12, cp13, cp14, cp15, cp16, cp17, cp18, cp19, cp20, cp21, cp22, cp23, cp24, cp25, GameID) VALUES ('%s', '%s', CURRENT_TIMESTAMP(), '%.3f', '%s', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%s');", pSqlServer->GetPrefix(), pData->m_Map.ClrStr(), pData->m_Name.ClrStr(), pData->m_Time, g_Config.m_SvSqlServerName, pData->m_aCpCurrent[0], pData->m_aCpCurrent[1], pData->m_aCpCurrent[2], pData->m_aCpCurrent[3], pData->m_aCpCurrent[4], pData->m_aCpCurrent[5], pData->m_aCpCurrent[6], pData->m_aCpCurrent[7], pData->m_aCpCurrent[8], pData->m_aCpCurrent[9], pData->m_aCpCurrent[10], pData->m_aCpCurrent[11], pData->m_aCpCurrent[12], pData->m_aCpCurrent[13], pData->m_aCpCurrent[14], pData->m_aCpCurrent[15], pData->m_aCpCurrent[16], pData->m_aCpCurrent[17], pData->m_aCpCurrent[18], pData->m_aCpCurrent[19], pData->m_aCpCurrent[20], pData->m_aCpCurrent[21], pData->m_aCpCurrent[22], pData->m_aCpCurrent[23], pData->m_aCpCurrent[24], pData->m_GameUuid.ClrStr());
-		dbg_msg("sql", "%s", aBuf);
-		pSqlServer->executeSql(aBuf);
-
-		dbg_msg("sql", "Updating time done");
 		return true;
 	}
 	catch (sql::SQLException &e)
