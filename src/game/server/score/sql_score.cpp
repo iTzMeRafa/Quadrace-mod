@@ -1827,7 +1827,7 @@ bool CSqlScore::ShowMapPointsThread(CSqlServer* pSqlServer, const CSqlData *pGam
 	try
 	{
 		char aBuf[512];
-		str_format(aBuf, sizeof(aBuf), "SELECT MIN(Time) as Time FROM %s_race WHERE Map = '%s' AND Name = '%s' HAVING Time IS NOT NULL;", pSqlServer->GetPrefix(), pData->m_Map.ClrStr(), pData->m_Name.ClrStr());
+		str_format(aBuf, sizeof(aBuf), "SELECT MIN(Time) as Time, t2.Points as Points FROM %s_race as t1 INNER JOIN %s_playermappoints as t2 ON t1.Map = t2.Map AND t1.Name = t2.Name WHERE t2.Map = '%s' AND t2.Name = '%s' HAVING Time IS NOT NULL;", pSqlServer->GetPrefix(), pSqlServer->GetPrefix(), pData->m_Map.ClrStr(), pData->m_Name.ClrStr());
 		pSqlServer->executeSqlQuery(aBuf);
 
 		if(pSqlServer->GetResults()->rowsCount() != 1)
@@ -1840,8 +1840,6 @@ bool CSqlScore::ShowMapPointsThread(CSqlServer* pSqlServer, const CSqlData *pGam
 			float PlayerTime = (float)pSqlServer->GetResults()->getDouble("Time");
 			float BestTime = ((CGameControllerDDRace*)pData->GameServer()->m_pController)->m_CurrentRecord;
 			float Slower = PlayerTime / BestTime - 1.0f;
-			str_format(aBuf, sizeof(aBuf), "SELECT Points FROM %s_playermappoints WHERE Name = '%s' AND Map = '%s';", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr());
-            pSqlServer->executeSqlQuery(aBuf);
             int Points = (int)pSqlServer->GetResults()->getInt("Points");
 			//str_format(aBuf, sizeof(aBuf), "%s is %0.2f%% slower than map record, Points: %d", pData->m_Name.Str(), Slower*100.0f, (int)(100.0f*exp(-pData->GameServer()->m_MapS*Slower)));
 			str_format(aBuf, sizeof(aBuf), "%s is %0.2f%% slower than map record, Points: %d", pData->m_Name.Str(), Slower*100.0f, Points);
