@@ -557,6 +557,7 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
     		dbg_msg("sql", "%s", aBuf);
     		pSqlServer->executeSql(aBuf);
 
+
     		dbg_msg("sql", "Updating time done");
 
 
@@ -567,7 +568,10 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
             		str_format(aBuf, sizeof(aBuf), "SELECT Rank, Name, Time FROM (SELECT Name, (@pos := @pos+1) pos, (@rank := IF(@prev = Time,@rank, @pos)) rank, (@prev := Time) Time FROM (SELECT Name, min(Time) as Time FROM %s_race WHERE Map = '%s' GROUP BY Name ORDER BY `Time` ASC) as a) as b WHERE Name = '%s';", pSqlServer->GetPrefix(), pData->m_Map.ClrStr(), pData->m_Name.ClrStr());
 			pSqlServer->executeSqlQuery(aBuf);
             pSqlServer->GetResults()->next();
+
+
             int Rank = (int)pSqlServer->GetResults()->getInt("Rank");
+            pData->GameServer()->SendBroadcast("%s finished this map. Rank: %s", pData->m_Name.ClrStr(), Rank );
 			dbg_msg("sql", "Rank: %f", Rank);
 			int Points = 0;
 				switch(Rank)
