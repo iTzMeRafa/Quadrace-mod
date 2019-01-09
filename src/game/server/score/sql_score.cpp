@@ -565,87 +565,88 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
             pSqlServer->executeSql("SET @prev := NULL;");
             		pSqlServer->executeSql("SET @rank := 1;");
             		pSqlServer->executeSql("SET @pos := 0;");
-            		str_format(aBuf, sizeof(aBuf), "SELECT Rank, Name, Time FROM (SELECT Name, (@pos := @pos+1) pos, (@rank := IF(@prev = Time,@rank, @pos)) rank, (@prev := Time) Time FROM (SELECT Name, min(Time) as Time FROM %s_race WHERE Map = '%s' GROUP BY Name ORDER BY `Time` ASC) as a) as b WHERE Name = '%s';", pSqlServer->GetPrefix(), pData->m_Map.ClrStr(), pData->m_Name.ClrStr());
+            		str_format(aBuf, sizeof(aBuf), "SELECT Rank, Name, Time FROM (SELECT Name, (@pos := @pos+1) pos, (@rank := IF(@prev = Time,@rank, @pos)) rank, (@prev := Time) Time FROM (SELECT Name, min(Time) as Time FROM %s_race WHERE Map = '%s' GROUP BY Name ORDER BY `Time` ASC) as a) as b;", pSqlServer->GetPrefix(), pData->m_Map.ClrStr());
 			pSqlServer->executeSqlQuery(aBuf);
-            pSqlServer->GetResults()->next();
-
-            int Rank = (int)pSqlServer->GetResults()->getInt("Rank");
-			dbg_msg("sql", "Rank: %d", Rank);
-			int Points = 0;
-				switch(Rank)
-				{
-				    case 0: Points = 0; break;
-					case 1: Points = 50; break;
-					case 2: Points = 49; break;
-					case 3: Points = 48; break;
-					case 4: Points = 47; break;
-					case 5: Points = 46; break;
-					case 6: Points = 45; break;
-					case 7: Points = 44; break;
-					case 8: Points = 43; break;
-					case 9: Points = 42; break;
-					case 10: Points = 41; break;
-					case 11: Points = 40; break;
-					case 12: Points = 39; break;
-					case 13: Points = 38; break;
-					case 14: Points = 37; break;
-					case 15: Points = 36; break;
-					case 16: Points = 35; break;
-					case 17: Points = 34; break;
-					case 18: Points = 33; break;
-					case 19: Points = 32; break;
-					case 20: Points = 31; break;
-					case 21: Points = 30; break;
-					case 22: Points = 29; break;
-					case 23: Points = 28; break;
-					case 24: Points = 27; break;
-					case 25: Points = 26; break;
-					case 26: Points = 25; break;
-					case 27: Points = 24; break;
-					case 28: Points = 23; break;
-					case 29: Points = 22; break;
-					case 30: Points = 21; break;
-					case 31: Points = 20; break;
-					case 32: Points = 19; break;
-					case 33: Points = 18; break;
-					case 34: Points = 17; break;
-					case 35: Points = 16; break;
-					case 36: Points = 15; break;
-					case 37: Points = 14; break;
-					case 38: Points = 13; break;
-					case 39: Points = 12; break;
-					case 40: Points = 11; break;
-					case 41: Points = 10; break;
-					case 42: Points = 9; break;
-					case 43: Points = 8; break;
-					case 44: Points = 7; break;
-					case 45: Points = 6; break;
-					case 46: Points = 5; break;
-					case 47: Points = 4; break;
-					case 48: Points = 3; break;
-					case 49: Points = 2; break;
-					case 50: Points = 1; break;
-
-				}
-
-				dbg_msg("sql", "Points: %d", Points);
-
-        str_format(aBuf, sizeof(aBuf), "SELECT * FROM %s_playermappoints WHERE Name = '%s' AND Map = '%s';", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr());
-        pSqlServer->executeSqlQuery(aBuf);
-            if(pSqlServer->GetResults()->rowsCount() > 0)
+            while(pSqlServer->GetResults()->next())
             {
-               dbg_msg("sql", "Einträge gelöscht");
-               str_format(aBuf, sizeof(aBuf), "DELETE FROM %s_playermappoints WHERE Name = '%s' AND Map = '%s';", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr());
-               pSqlServer->executeSql(aBuf);
+
+                int Rank = (int)pSqlServer->GetResults()->getInt("Rank");
+                dbg_msg("sql", "Rank: %d", Rank);
+                int Points = 0;
+                    switch(Rank)
+                    {
+                        case 0: Points = 0; break;
+                        case 1: Points = 50; break;
+                        case 2: Points = 49; break;
+                        case 3: Points = 48; break;
+                        case 4: Points = 47; break;
+                        case 5: Points = 46; break;
+                        case 6: Points = 45; break;
+                        case 7: Points = 44; break;
+                        case 8: Points = 43; break;
+                        case 9: Points = 42; break;
+                        case 10: Points = 41; break;
+                        case 11: Points = 40; break;
+                        case 12: Points = 39; break;
+                        case 13: Points = 38; break;
+                        case 14: Points = 37; break;
+                        case 15: Points = 36; break;
+                        case 16: Points = 35; break;
+                        case 17: Points = 34; break;
+                        case 18: Points = 33; break;
+                        case 19: Points = 32; break;
+                        case 20: Points = 31; break;
+                        case 21: Points = 30; break;
+                        case 22: Points = 29; break;
+                        case 23: Points = 28; break;
+                        case 24: Points = 27; break;
+                        case 25: Points = 26; break;
+                        case 26: Points = 25; break;
+                        case 27: Points = 24; break;
+                        case 28: Points = 23; break;
+                        case 29: Points = 22; break;
+                        case 30: Points = 21; break;
+                        case 31: Points = 20; break;
+                        case 32: Points = 19; break;
+                        case 33: Points = 18; break;
+                        case 34: Points = 17; break;
+                        case 35: Points = 16; break;
+                        case 36: Points = 15; break;
+                        case 37: Points = 14; break;
+                        case 38: Points = 13; break;
+                        case 39: Points = 12; break;
+                        case 40: Points = 11; break;
+                        case 41: Points = 10; break;
+                        case 42: Points = 9; break;
+                        case 43: Points = 8; break;
+                        case 44: Points = 7; break;
+                        case 45: Points = 6; break;
+                        case 46: Points = 5; break;
+                        case 47: Points = 4; break;
+                        case 48: Points = 3; break;
+                        case 49: Points = 2; break;
+                        case 50: Points = 1; break;
+
+                    }
+
+                    dbg_msg("sql", "Points: %d", Points);
+
+                    str_format(aBuf, sizeof(aBuf), "SELECT * FROM %s_playermappoints WHERE Map = '%s';", pSqlServer->GetPrefix(), pData->m_Map.ClrStr());
+                    pSqlServer->executeSqlQuery(aBuf);
+                        if(pSqlServer->GetResults()->rowsCount() > 0)
+                        {
+                           dbg_msg("sql", "Einträge gelöscht");
+                           str_format(aBuf, sizeof(aBuf), "DELETE FROM %s_playermappoints WHERE Map = '%s';", pSqlServer->GetPrefix(), pData->m_Map.ClrStr());
+                           pSqlServer->executeSql(aBuf);
+                        }
+                        else {
+                            dbg_msg("sql", "Einträge NICHT gefunden");
+
+                        }
+
+                    str_format(aBuf, sizeof(aBuf), "INSERT INTO %s_playermappoints(Name, Map, Points) VALUES ('%s', '%s', '%d') ON duplicate key UPDATE Name=VALUES(Name), Points=VALUES(Points);", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr(), Points);
+                    pSqlServer->executeSql(aBuf);
             }
-            else {
-                dbg_msg("sql", "Einträge NICHT gefunden");
-
-            }
-
-        str_format(aBuf, sizeof(aBuf), "INSERT INTO %s_playermappoints(Name, Map, Points) VALUES ('%s', '%s', '%d') ON duplicate key UPDATE Name=VALUES(Name), Points=VALUES(Points);", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr(), Points);
-        pSqlServer->executeSql(aBuf);
-
 		return true;
 	}
 	catch (sql::SQLException &e)
