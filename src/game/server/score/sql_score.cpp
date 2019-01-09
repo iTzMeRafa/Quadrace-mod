@@ -571,7 +571,7 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
 
 
             int Rank = (int)pSqlServer->GetResults()->getInt("Rank");
-            pData->GameServer()->SendBroadcast("You finished this map. Rank: %s", Rank);
+            pData->GameServer()->SendBroadcast("You finished this map. Rank: %s", Rank, true);
 			dbg_msg("sql", "Rank: %f", Rank);
 			int Points = 0;
 				switch(Rank)
