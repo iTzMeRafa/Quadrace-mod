@@ -560,62 +560,72 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
 			OldTime = pSqlServer->GetResults()->getDouble("Time");
 		if(FirstRank || pData->m_Time < OldTime)
 		{
-			str_format(aBuf, sizeof(aBuf), "SELECT Server, Stars FROM %s_maps WHERE Map='%s'", pSqlServer->GetPrefix(), pData->m_Map.ClrStr());
-			pSqlServer->executeSqlQuery(aBuf);
-			pSqlServer->GetResults()->next();
-			float S;
-			char aServer[32];
-			strcpy(aServer, pSqlServer->GetResults()->getString("Server").c_str());
-			if(str_comp(aServer, "Short") == 0)
-				S = 5.0f;
-			else if(str_comp(aServer, "Middle") == 0)
-				S = 3.5f;
-			else if(str_comp(aServer, "Long") == 0)
-				switch(pSqlServer->GetResults()->getInt("Stars"))
+			pSqlServer->executeSql("SET @prev := NULL;");
+            		pSqlServer->executeSql("SET @rank := 1;");
+            		pSqlServer->executeSql("SET @pos := 0;");
+            		str_format(aBuf, sizeof(aBuf), "SELECT Rank, Name, Time FROM (SELECT Name, (@pos := @pos+1) pos, (@rank := IF(@prev = Time,@rank, @pos)) rank, (@prev := Time) Time FROM (SELECT Name, min(Time) as Time FROM %s_race WHERE Map = '%s' GROUP BY Name ORDER BY `Time` ASC) as a) as b WHERE Name = '%s';", pSqlServer->GetPrefix(), pData->m_Map.ClrStr(), pData->m_Name.ClrStr());
+            pSqlServer->executeSqlQuery(aBuf);
+            pSqlServer->GetResults()->next();
+			int Rank = (int)pSqlServer->GetResults()->getInt("Rank");
+			int Points = 0;
+				switch(Rank)
 				{
-					case 0: S = 2.0f; break;
-					case 1: S = 1.0f; break;
-					case 2: S = 0.05f; break;
+					case 1: Points = 50; break;
+					case 2: Points = 49; break;
+					case 3: Points = 48; break;
+					case 4: Points = 47; break;
+					case 5: Points = 46; break;
+					case 6: Points = 45; break;
+					case 7: Points = 44; break;
+					case 8: Points = 43; break;
+					case 9: Points = 42; break;
+					case 10: Points = 41; break;
+					case 11: Points = 40; break;
+					case 12: Points = 39; break;
+					case 13: Points = 38; break;
+					case 14: Points = 37; break;
+					case 15: Points = 36; break;
+					case 16: Points = 35; break;
+					case 17: Points = 34; break;
+					case 18: Points = 33; break;
+					case 19: Points = 32; break;
+					case 20: Points = 31; break;
+					case 21: Points = 30; break;
+					case 22: Points = 29; break;
+					case 23: Points = 28; break;
+					case 24: Points = 27; break;
+					case 25: Points = 26; break;
+					case 26: Points = 25; break;
+					case 27: Points = 24; break;
+					case 28: Points = 23; break;
+					case 29: Points = 22; break;
+					case 30: Points = 21; break;
+					case 31: Points = 20; break;
+					case 32: Points = 19; break;
+					case 33: Points = 18; break;
+					case 34: Points = 17; break;
+					case 35: Points = 16; break;
+					case 36: Points = 15; break;
+					case 37: Points = 14; break;
+					case 38: Points = 13; break;
+					case 39: Points = 12; break;
+					case 40: Points = 11; break;
+					case 41: Points = 10; break;
+					case 42: Points = 9; break;
+					case 43: Points = 8; break;
+					case 44: Points = 7; break;
+					case 45: Points = 6; break;
+					case 46: Points = 5; break;
+					case 47: Points = 4; break;
+					case 48: Points = 3; break;
+					case 49: Points = 2; break;
+					case 50: Points = 1; break;
+
 				}
-			else if(str_comp(aServer, "Fastcap") == 0)
-				S = 5.0f;
-			if(pData->m_Time < pData->m_CurrentRecord)
-			{
-				str_format(aBuf, sizeof(aBuf), "UPDATE %s_points t1 INNER JOIN (SELECT Name, ROUND(MIN(Time), 3) AS minTime FROM %s_race WHERE Map='%s' GROUP BY Name) t2 ON t1.Name = t2.Name SET t1.Points=t1.Points-FLOOR(100*EXP(-%f*(t2.minTime/%f-1)))+FLOOR(100*EXP(-%f*(t2.minTime/%f-1)));", pSqlServer->GetPrefix(), pSqlServer->GetPrefix(), pData->m_Map.ClrStr(), S, pData->m_CurrentRecord, S, pData->m_Time);
-				pSqlServer->executeSql(aBuf);
-				str_format(aBuf, sizeof(aBuf), "UPDATE %s_catpoints t1 INNER JOIN (SELECT Name, ROUND(MIN(Time), 3) AS minTime FROM %s_race WHERE Map='%s' GROUP BY Name) t2 ON t1.Name = t2.Name SET t1.Points=t1.Points-FLOOR(100*EXP(-%f*(t2.minTime/%f-1)))+FLOOR(100*EXP(-%f*(t2.minTime/%f-1))) WHERE Server='%s';", pSqlServer->GetPrefix(), pSqlServer->GetPrefix(), pData->m_Map.ClrStr(), S, pData->m_CurrentRecord, S, pData->m_Time, aServer);
-				pSqlServer->executeSql(aBuf);
-			}
-			float Record = pData->m_CurrentRecord ? min(pData->m_CurrentRecord, pData->m_Time) : pData->m_Time;
-			str_format(aBuf, sizeof(aBuf), "INSERT INTO %s_points SELECT '%s', -IFNULL(%s, FLOOR(100*EXP(-%f*(%f/%f-1))))+FLOOR(100*EXP(-%f*(%f/%f-1))) ON DUPLICATE KEY UPDATE Points=Points+VALUES(Points);", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), FirstRank ? "0" : "NULL", S, OldTime, Record, S, pData->m_Time, Record);
-			pSqlServer->executeSql(aBuf);
-			str_format(aBuf, sizeof(aBuf), "INSERT INTO %s_catpoints SELECT '%s', '%s', -IFNULL(%s, FLOOR(100*EXP(-%f*(%f/%f-1))))+FLOOR(100*EXP(-%f*(%f/%f-1))) ON DUPLICATE KEY UPDATE Points=Points+VALUES(Points);", pSqlServer->GetPrefix(), aServer, pData->m_Name.ClrStr(), FirstRank ? "0" : "NULL", S, OldTime, Record, S, pData->m_Time, Record);
-			pSqlServer->executeSql(aBuf);
+                str_format(aBuf, sizeof(aBuf), "INSERT INTO %s_playermappoints(Name, Map, Points) VALUES ('%s', '%d', '%f') ON duplicate key UPDATE Name=VALUES(Name), Points=VALUES(Points);", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), pData->m_Map.ClrStr(), Points );
+                pSqlServer->executeSql(aBuf);
 		}
-		/*if(!pSqlServer->GetResults()->next())
-		{
-			str_format(aBuf, sizeof(aBuf), "SELECT Points FROM %s_maps WHERE Map ='%s'", pSqlServer->GetPrefix(), pData->m_Map.ClrStr());
-			pSqlServer->executeSqlQuery(aBuf);
 
-			if(pSqlServer->GetResults()->rowsCount() == 1)
-			{
-				pSqlServer->GetResults()->next();
-				int points = (int)pSqlServer->GetResults()->getInt("Points");
-				if (points == 1)
-					str_format(aBuf, sizeof(aBuf), "You earned %d point for finishing this map!", points);
-				else
-					str_format(aBuf, sizeof(aBuf), "You earned %d points for finishing this map!", points);
-
-				try
-				{
-					pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
-				}
-				catch (CGameContextError &e) {} // just do nothing, it is not much of a problem if the player is not informed about points during mapchange
-
-				str_format(aBuf, sizeof(aBuf), "INSERT INTO %s_points(Name, Points) VALUES ('%s', '%d') ON duplicate key UPDATE Name=VALUES(Name), Points=Points+VALUES(Points);", pSqlServer->GetPrefix(), pData->m_Name.ClrStr(), points);
-				pSqlServer->executeSql(aBuf);
-			}
-		}*/
 
 		// if no entry found... create a new one
 		str_format(aBuf, sizeof(aBuf), "INSERT IGNORE INTO %s_race(Map, Name, Timestamp, Time, Server, cp1, cp2, cp3, cp4, cp5, cp6, cp7, cp8, cp9, cp10, cp11, cp12, cp13, cp14, cp15, cp16, cp17, cp18, cp19, cp20, cp21, cp22, cp23, cp24, cp25, GameID) VALUES ('%s', '%s', CURRENT_TIMESTAMP(), '%.3f', '%s', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%.3f', '%s');", pSqlServer->GetPrefix(), pData->m_Map.ClrStr(), pData->m_Name.ClrStr(), pData->m_Time, g_Config.m_SvSqlServerName, pData->m_aCpCurrent[0], pData->m_aCpCurrent[1], pData->m_aCpCurrent[2], pData->m_aCpCurrent[3], pData->m_aCpCurrent[4], pData->m_aCpCurrent[5], pData->m_aCpCurrent[6], pData->m_aCpCurrent[7], pData->m_aCpCurrent[8], pData->m_aCpCurrent[9], pData->m_aCpCurrent[10], pData->m_aCpCurrent[11], pData->m_aCpCurrent[12], pData->m_aCpCurrent[13], pData->m_aCpCurrent[14], pData->m_aCpCurrent[15], pData->m_aCpCurrent[16], pData->m_aCpCurrent[17], pData->m_aCpCurrent[18], pData->m_aCpCurrent[19], pData->m_aCpCurrent[20], pData->m_aCpCurrent[21], pData->m_aCpCurrent[22], pData->m_aCpCurrent[23], pData->m_aCpCurrent[24], pData->m_GameUuid.ClrStr());
@@ -1245,8 +1255,8 @@ bool CSqlScore::ShowPointsThread(CSqlServer* pSqlServer, const CSqlData *pGameDa
 
 		if(pSqlServer->GetResults()->rowsCount() != 1)
 		{
-			//str_format(aBuf, sizeof(aBuf), "%s Points: 0", pData->m_Name.Str());
-			str_format(aBuf, sizeof(aBuf), "Quadrace does not have a point system yet :(");
+			str_format(aBuf, sizeof(aBuf), "%s hasn't collected any points yet and is not qualified in a league.", pData->m_Name.Str());
+			//str_format(aBuf, sizeof(aBuf), "Quadrace does not have a point system yet :(");
 			pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
 		}
 		else
@@ -1254,8 +1264,8 @@ bool CSqlScore::ShowPointsThread(CSqlServer* pSqlServer, const CSqlData *pGameDa
 			pSqlServer->GetResults()->next();
 			int count = (int)pSqlServer->GetResults()->getInt("Points");
 			int rank = (int)pSqlServer->GetResults()->getInt("Rank");
-			//str_format(aBuf, sizeof(aBuf), "%d. %s Points: %d, requested by %s", rank, pSqlServer->GetResults()->getString("Name").c_str(), count, pData->m_aRequestingPlayer);
-			str_format(aBuf, sizeof(aBuf), "Quadrace does not have a point system yet :(");
+			str_format(aBuf, sizeof(aBuf), "%d. %s Points: %d, League: -, requested by %s", rank, pSqlServer->GetResults()->getString("Name").c_str(), count, pData->m_aRequestingPlayer);
+			//str_format(aBuf, sizeof(aBuf), "Quadrace does not have a point system yet :(");
 			pData->GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf, pData->m_ClientID);
 		}
 
@@ -1307,15 +1317,13 @@ bool CSqlScore::ShowTopPointsThread(CSqlServer* pSqlServer, const CSqlData *pGam
 
 		// show top points
 		pData->GameServer()->SendChatTarget(pData->m_ClientID, "~~~~~~~~ Top Quadracers ~~~~~~~~");
-
-        str_format(aBuf, sizeof(aBuf), "( ͡° ͜ʖ ͡°)");
-		/*while(pSqlServer->GetResults()->next())
+		while(pSqlServer->GetResults()->next())
 		{
 			str_format(aBuf, sizeof(aBuf), "%d. %s Points: %d", pSqlServer->GetResults()->getInt("Rank"), pSqlServer->GetResults()->getString("Name").c_str(), pSqlServer->GetResults()->getInt("Points"));
 			pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
-		}*/
-		pData->GameServer()->SendChatTarget(pData->m_ClientID, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-
+		}
+        pData->GameServer()->SendChatTarget(pData->m_ClientID, "( ͡° ͜ʖ ͡°)");
+        pData->GameServer()->SendChatTarget(pData->m_ClientID, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 		dbg_msg("sql", "Showing toppoints done");
 		return true;
 	}
