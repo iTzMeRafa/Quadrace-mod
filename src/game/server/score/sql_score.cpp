@@ -569,13 +569,12 @@ bool CSqlScore::SaveScoreThread(CSqlServer* pSqlServer, const CSqlData *pGameDat
 			pSqlServer->executeSqlQuery(aBuf);
             pSqlServer->GetResults()->next();
 
-
             int Rank = (int)pSqlServer->GetResults()->getInt("Rank");
-            pData->GameServer()->SendBroadcast("You finished this map. Rank: %s", Rank, true);
-			dbg_msg("sql", "Rank: %f", Rank);
+			dbg_msg("sql", "Rank: %d", Rank);
 			int Points = 0;
 				switch(Rank)
 				{
+				    case 0: Points = 0; break;
 					case 1: Points = 50; break;
 					case 2: Points = 49; break;
 					case 3: Points = 48; break;
@@ -1317,19 +1316,12 @@ bool CSqlScore::ShowTopPointsThread(CSqlServer* pSqlServer, const CSqlData *pGam
 
 		// show top points
 		pData->GameServer()->SendChatTarget(pData->m_ClientID, "~~~~~~~~ Top Quadracers ~~~~~~~~");
-		int loop = 1;
 		while(pSqlServer->GetResults()->next())
 		{
-		if(loop == 1) {
-			str_format(aBuf, sizeof(aBuf), "★ %d. %s Points: %d", pSqlServer->GetResults()->getInt("Rank"), pSqlServer->GetResults()->getString("Name").c_str(), pSqlServer->GetResults()->getInt("Points"));
-			pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
-        }
             str_format(aBuf, sizeof(aBuf), "%d. %s Points: %d", pSqlServer->GetResults()->getInt("Rank"), pSqlServer->GetResults()->getString("Name").c_str(), pSqlServer->GetResults()->getInt("Points"));
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
-			loop++;
 		}
-        pData->GameServer()->SendChatTarget(pData->m_ClientID, "( ͡° ͜ʖ ͡°)");
-        pData->GameServer()->SendChatTarget(pData->m_ClientID, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+        pData->GameServer()->SendChatTarget(pData->m_ClientID, "~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 		dbg_msg("sql", "Showing toppoints done");
 		return true;
 	}
