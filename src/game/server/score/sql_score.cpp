@@ -1292,19 +1292,19 @@ bool CSqlScore::ShowPointsThread(CSqlServer* pSqlServer, const CSqlData *pGameDa
 
             char playersLeague[17];
             if(playerLeaguePercentage < 10) {
-                strcpy(playersLeague, "unranked");
+                strcpy(playersLeague, "Unranked");
             }
             else if(playerLeaguePercentage >= 10 && playerLeaguePercentage <= 39) {
-                strcpy(playersLeague, "bronze");
+                strcpy(playersLeague, "Bronze");
             }
             else if(playerLeaguePercentage >= 40 && playerLeaguePercentage <= 65) {
-                strcpy(playersLeague, "silver");
+                strcpy(playersLeague, "Silver");
             }
             else if(playerLeaguePercentage >= 66 && playerLeaguePercentage <= 89) {
-                strcpy(playersLeague, "gold");
+                strcpy(playersLeague, "Gold");
             }
             else if(playerLeaguePercentage >= 90) {
-                strcpy(playersLeague, "challenger");
+                strcpy(playersLeague, "Challenger");
             }
             else {
                 strcpy(playersLeague, "-");
