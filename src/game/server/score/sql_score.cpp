@@ -1260,6 +1260,8 @@ bool CSqlScore::ShowPointsThread(CSqlServer* pSqlServer, const CSqlData *pGameDa
 
 	try
 	{
+	    char aBuf[512];
+
 	    str_format(aBuf, sizeof(aBuf), "SELECT (count(*)*50) as AvailablePoints FROM record_maps");
         pSqlServer->executeSqlQuery(aBuf);
         pSqlServer->GetResults()->first();
@@ -1269,7 +1271,6 @@ bool CSqlScore::ShowPointsThread(CSqlServer* pSqlServer, const CSqlData *pGameDa
 		pSqlServer->executeSql("SET @rank := 1;");
 		pSqlServer->executeSql("SET @pos := 0;");
 
-		char aBuf[512];
 		str_format(aBuf, sizeof(aBuf), "SELECT Rank, Points, Name FROM (SELECT Name, (@pos := @pos+1) pos, (@rank := IF(@prev = Points, @rank, @pos)) Rank, (@prev := Points) Points FROM (SELECT Name, SUM(Points) as Points FROM %s_playermappoints WHERE Points > 0 GROUP BY Name ORDER BY Points DESC) as a) as b where Name = '%s';", pSqlServer->GetPrefix(), pData->m_Name.ClrStr());
 		pSqlServer->executeSqlQuery(aBuf);
 
