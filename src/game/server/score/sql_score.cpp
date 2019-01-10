@@ -1285,7 +1285,7 @@ bool CSqlScore::ShowPointsThread(CSqlServer* pSqlServer, const CSqlData *pGameDa
 			int count = (int)pSqlServer->GetResults()->getInt("Points");
 			int rank = (int)pSqlServer->GetResults()->getInt("Rank");
 
-			int playerLeaguePercentage = ((float)playersPoints/availablePoints)*100;
+			int playerLeaguePercentage = ((float)count/availablePoints)*100;
             dbg_msg("sql", "Available Points: %d", availablePoints);
 			dbg_msg("sql", "Players Points: %d", count);
             dbg_msg("sql", "Players Percentage: %d", playerLeaguePercentage);
