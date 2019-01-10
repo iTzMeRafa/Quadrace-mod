@@ -1271,16 +1271,41 @@ bool CSqlScore::ShowPointsThread(CSqlServer* pSqlServer, const CSqlData *pGameDa
 		if(pSqlServer->GetResults()->rowsCount() != 1)
 		{
 			str_format(aBuf, sizeof(aBuf), "%s hasn't collected any points yet and is not qualified in a league.", pData->m_Name.Str());
-			//str_format(aBuf, sizeof(aBuf), "Quadrace does not have a point system yet :(");
-			pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
+			pData->GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf, pData->m_ClientID);
 		}
 		else
 		{
 			pSqlServer->GetResults()->next();
 			int count = (int)pSqlServer->GetResults()->getInt("Points");
 			int rank = (int)pSqlServer->GetResults()->getInt("Rank");
-			str_format(aBuf, sizeof(aBuf), "%d. %s Points: %d, League: -, requested by %s", rank, pSqlServer->GetResults()->getString("Name").c_str(), count, pData->m_aRequestingPlayer);
-			//str_format(aBuf, sizeof(aBuf), "Quadrace does not have a point system yet :(");
+			str_format(aBuf, sizeof(aBuf), "SELECT (count(*)*50) as AvailablePoints FROM record_maps");
+            pSqlServer->executeSqlQuery(aBuf);
+            pSqlServer->GetResults()->first();
+            int availablePoints = (int)pSqlServer->GetResults()->getInt("AvailablePoints");
+
+            int playerLeaguePercentage = (count/availablePoints)*100;
+            dbg_msg("sql", "Players Percentage: %d", playerLeaguePercentage);
+            char playersLeague[17];
+            if(playerLeaguePercentage < 10) {
+                strcpy(playersLeague, "unranked");
+            }
+            else if(playerLeaguePercentage >= 10 && playerLeaguePercentage <= 39) {
+                strcpy(playersLeague, "bronze");
+            }
+            else if(playerLeaguePercentage >= 40 && playerLeaguePercentage <= 65) {
+                strcpy(playersLeague, "silver");
+            }
+            else if(playerLeaguePercentage >= 66 && playerLeaguePercentage <= 89) {
+                strcpy(playersLeague, "gold");
+            }
+            else if(playerLeaguePercentage >= 90) {
+                strcpy(playersLeague, "challenger");
+            }
+            else {
+                strcpy(playersLeague, "-");
+            }
+            dbg_msg("sql", "Liga: %s", playersLeague);
+			str_format(aBuf, sizeof(aBuf), "%d. %s Points: %d, League: %s, requested by %s", rank, pSqlServer->GetResults()->getString("Name").c_str(), count, playersLeague, pData->m_aRequestingPlayer);
 			pData->GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf, pData->m_ClientID);
 		}
 
