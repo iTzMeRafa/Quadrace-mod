@@ -1260,6 +1260,11 @@ bool CSqlScore::ShowPointsThread(CSqlServer* pSqlServer, const CSqlData *pGameDa
 
 	try
 	{
+	    str_format(aBuf, sizeof(aBuf), "SELECT (count(*)*50) as AvailablePoints FROM record_maps");
+        pSqlServer->executeSqlQuery(aBuf);
+        pSqlServer->GetResults()->first();
+        int availablePoints = (int)pSqlServer->GetResults()->getInt("AvailablePoints");
+
 		pSqlServer->executeSql("SET @prev := NULL;");
 		pSqlServer->executeSql("SET @rank := 1;");
 		pSqlServer->executeSql("SET @pos := 0;");
@@ -1278,12 +1283,8 @@ bool CSqlScore::ShowPointsThread(CSqlServer* pSqlServer, const CSqlData *pGameDa
 			pSqlServer->GetResults()->next();
 			int count = (int)pSqlServer->GetResults()->getInt("Points");
 			int rank = (int)pSqlServer->GetResults()->getInt("Rank");
-			str_format(aBuf, sizeof(aBuf), "SELECT (count(*)*50) as AvailablePoints FROM record_maps");
-            pSqlServer->executeSqlQuery(aBuf);
-            pSqlServer->GetResults()->first();
-            int availablePoints = (int)pSqlServer->GetResults()->getInt("AvailablePoints");
-
-            int playerLeaguePercentage = (count/availablePoints)*100;
+			int playerLeaguePercentage = (count/availablePoints)*100;
+			dbg_msg("sql", "Players Points: %d", count);
             dbg_msg("sql", "Players Percentage: %d", playerLeaguePercentage);
             char playersLeague[17];
             if(playerLeaguePercentage < 10) {
