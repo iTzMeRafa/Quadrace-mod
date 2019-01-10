@@ -1337,7 +1337,7 @@ bool CSqlScore::ShowTopPointsThread(CSqlServer* pSqlServer, const CSqlData *pGam
             str_format(aBuf, sizeof(aBuf), "%d. %s Points: %d", pSqlServer->GetResults()->getInt("Rank"), pSqlServer->GetResults()->getString("Name").c_str(), pSqlServer->GetResults()->getInt("Points"));
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
 		}
-        pData->GameServer()->SendChatTarget(pData->m_ClientID, "---------------------------");
+        pData->GameServer()->SendChatTarget(pData->m_ClientID, "----------------------------------------");
         str_format(aBuf, sizeof(aBuf), "SELECT (count(*)*50) as AvailablePoints FROM record_maps");
         pSqlServer->executeSqlQuery(aBuf);
         pSqlServer->GetResults()->first();

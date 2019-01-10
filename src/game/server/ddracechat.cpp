@@ -17,13 +17,11 @@ void CGameContext::ConCredits(IConsole::IResult *pResult, void *pUserData)
 	CGameContext *pSelf = (CGameContext *) pUserData;
 
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit",
-		"Unique Race is run by Tezcan, timakro and Ryozuki.");
+		"Quadrace is run by NeXus.");
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit",
-		"It is a mod of DDNet run by the DDNet staff (DDNet.tw/staff),");
+		"It is based on the DDNet mod");
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit",
-		"that is based on DDRace by the DDRace developers,");
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit",
-		"which is a mod of Teeworlds by the Teeworlds developers.");
+		"Official Website: http://109.73.52.223");
 }
 
 void CGameContext::ConInfo(IConsole::IResult *pResult, void *pUserData)
