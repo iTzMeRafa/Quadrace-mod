@@ -1907,8 +1907,8 @@ void CSqlScore::ShowPromotion(int ClientID, const char* pName)
 	Tmp->m_ClientID = ClientID;
 	Tmp->m_Name = pName;
 
-	void *MapPointsThread = thread_init(ExecSqlFunc, new CSqlExecData(ShowMapPointsThread, Tmp));
-	thread_detach(MapPointsThread);
+	void *PromotionThread = thread_init(ExecSqlFunc, new CSqlExecData(ShowPromotionThread, Tmp));
+	thread_detach(PromotionThread);
 }
 
 bool CSqlScore::ShowPromotionThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure)
@@ -1946,11 +1946,11 @@ bool CSqlScore::ShowPromotionThread(CSqlServer* pSqlServer, const CSqlData *pGam
 	catch (sql::SQLException &e)
 	{
 		dbg_msg("sql", "MySQL Error: %s", e.what());
-		dbg_msg("sql", "ERROR: Could not show map points");
+		dbg_msg("sql", "ERROR: Could not show promotion");
 	}
 	catch (CGameContextError &e)
 	{
-		dbg_msg("sql", "WARNING: Aborted showing map points due to reload/change of map.");
+		dbg_msg("sql", "WARNING: Aborted showing promotion due to reload/change of map.");
 		return true;
 	}
 	return false;
