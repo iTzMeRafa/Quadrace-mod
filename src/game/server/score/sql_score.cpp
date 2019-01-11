@@ -1923,13 +1923,13 @@ bool CSqlScore::ShowPromotionThread(CSqlServer* pSqlServer, const CSqlData *pGam
 		char aBuf[512];
 
         // Get Available Points
-		str_format(aBuf, sizeof(aBuf), "SELECT (count(*)*50) as AvailablePoints FROM record_maps");
+		str_format(aBuf, sizeof(aBuf), "SELECT (count(*)*50) as AvailablePoints FROM record_maps;");
                 pSqlServer->executeSqlQuery(aBuf);
                 pSqlServer->GetResults()->first();
                 int AvailablePoints = (int)pSqlServer->GetResults()->getInt("AvailablePoints");
 
         // Get Player Points
-        str_format(aBuf, sizeof(aBuf), "SELECT SUM(Points) as Points FROM record_playermappoints WHERE Name = %s';", pData->m_Name.ClrStr());
+        str_format(aBuf, sizeof(aBuf), "SELECT SUM(Points) as Points FROM record_playermappoints WHERE Name = '%s';", pData->m_Name.ClrStr());
                         pSqlServer->executeSqlQuery(aBuf);
 
         if(pSqlServer->GetResults()->rowsCount() != 1)
