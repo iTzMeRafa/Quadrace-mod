@@ -1978,13 +1978,18 @@ bool CSqlScore::ShowPromotionThread(CSqlServer* pSqlServer, const CSqlData *pGam
             int ChallengerFrom = AvailablePoints*0.9;
 
             // Get Player Points needed for next Promotion
-            int PlayerNextPromotion = 0;
-            switch(playersLeague)
+            constexpr unsigned int str2int(const char* str, int h = 0)
             {
-                case "Unranked": PlayerNextPromotion = BronzeFrom-PlayerPoints; break;
-                case "Bronze": PlayerNextPromotion = SilverFrom-PlayerPoints; break;
-                case "Silver": PlayerNextPromotion = GoldFrom-PlayerPoints; break;
-                case "Gold": PlayerNextPromotion = ChallengerFrom-PlayerPoints; break;
+                return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
+            }
+            
+            int PlayerNextPromotion = 0;
+            switch(str2int(playersLeague))
+            {
+                case str2int("Unranked"): PlayerNextPromotion = BronzeFrom-PlayerPoints; break;
+                case str2int("Bronze"): PlayerNextPromotion = SilverFrom-PlayerPoints; break;
+                case str2int("Silver"): PlayerNextPromotion = GoldFrom-PlayerPoints; break;
+                case str2int("Gold"): PlayerNextPromotion = ChallengerFrom-PlayerPoints; break;
                 default: PlayerNextPromotion = 0;
             }
 
