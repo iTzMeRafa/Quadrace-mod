@@ -1921,26 +1921,93 @@ bool CSqlScore::ShowPromotionThread(CSqlServer* pSqlServer, const CSqlData *pGam
 	try
 	{
 		char aBuf[512];
-		str_format(aBuf, sizeof(aBuf), "SELECT MIN(Time) as Time, t2.Points as Points FROM %s_race as t1 INNER JOIN %s_playermappoints as t2 ON t1.Map = t2.Map AND t1.Name = t2.Name WHERE t2.Map = '%s' AND t2.Name = '%s' HAVING Time IS NOT NULL;", pSqlServer->GetPrefix(), pSqlServer->GetPrefix(), pData->m_Map.ClrStr(), pData->m_Name.ClrStr());
-		pSqlServer->executeSqlQuery(aBuf);
 
-		if(pSqlServer->GetResults()->rowsCount() != 1)
-		{
-			str_format(aBuf, sizeof(aBuf), "%s has no score on this map", pData->m_Name.Str());
-		}
-		else
-		{
-			pSqlServer->GetResults()->next();
-			float PlayerTime = (float)pSqlServer->GetResults()->getDouble("Time");
-			float BestTime = ((CGameControllerDDRace*)pData->GameServer()->m_pController)->m_CurrentRecord;
-			float Slower = PlayerTime / BestTime - 1.0f;
-            int Points = (int)pSqlServer->GetResults()->getInt("Points");
-			//str_format(aBuf, sizeof(aBuf), "%s is %0.2f%% slower than map record, Points: %d", pData->m_Name.Str(), Slower*100.0f, (int)(100.0f*exp(-pData->GameServer()->m_MapS*Slower)));
-			str_format(aBuf, sizeof(aBuf), "%s is %0.2f%% slower than map record, Points: %d", pData->m_Name.Str(), Slower*100.0f, Points);
-		}
-		pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
+        // Get Available Points
+		str_format(aBuf, sizeof(aBuf), "SELECT (count(*)*50) as AvailablePoints FROM record_maps");
+                pSqlServer->executeSqlQuery(aBuf);
+                pSqlServer->GetResults()->first();
+                int AvailablePoints = (int)pSqlServer->GetResults()->getInt("AvailablePoints");
 
-		dbg_msg("sql", "Showing map points done");
+        // Get Player Points
+        str_format(aBuf, sizeof(aBuf), "SELECT SUM(Points) as Points FROM record_playermappoints WHERE Name = %s';", pData->m_Name.ClrStr());
+                        pSqlServer->executeSqlQuery(aBuf);
+
+        if(pSqlServer->GetResults()->rowsCount() != 1)
+        {
+            str_format(aBuf, sizeof(aBuf), "%s has no score on this map and is not qualified in a league yet", pData->m_Name.Str());
+            pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
+        }
+        else
+        {
+            pSqlServer->GetResults()->first();
+            int PlayerPoints = (int)pSqlServer->GetResults()->getInt("Points");
+
+            // Get Player League Percentage
+            int playerLeaguePercentage = ((float)PlayerPoints/AvailablePoints)*100;
+
+            // Get Player League
+            char playersLeague[17];
+            if(playerLeaguePercentage < 10) {
+                strcpy(playersLeague, "Unranked");
+            }
+            else if(playerLeaguePercentage >= 10 && playerLeaguePercentage <= 39) {
+                strcpy(playersLeague, "Bronze");
+            }
+            else if(playerLeaguePercentage >= 40 && playerLeaguePercentage <= 65) {
+                strcpy(playersLeague, "Silver");
+            }
+            else if(playerLeaguePercentage >= 66 && playerLeaguePercentage <= 89) {
+                strcpy(playersLeague, "Gold");
+            }
+            else if(playerLeaguePercentage >= 90) {
+                strcpy(playersLeague, "Challenger");
+            }
+            else {
+                strcpy(playersLeague, "-");
+            }
+
+            // Get From and To Points for each League
+            int UnrankedFrom = 0;
+            int UnrankedTo = AvailablePoints*0.09;
+            int BronzeFrom = AvailablePoints*0.1;
+            int BronzeTo = AvailablePoints*0.39;
+            int SilverFrom = AvailablePoints*0.4;
+            int SilverTo = AvailablePoints*0.65;
+            int GoldFrom = AvailablePoints*0.66;
+            int GoldTo = AvailablePoints*0.89;
+            int ChallengerFrom = AvailablePoints*0.9;
+
+            // Get Player Points needed for next Promotion
+            int PlayerNextPromotion = 0;
+            switch(playersLeague)
+            {
+                case "Unranked": PlayerNextPromotion = BronzeFrom-PlayerPoints; break;
+                case "Bronze": PlayerNextPromotion = SilverFrom-PlayerPoints; break;
+                case "Silver": PlayerNextPromotion = GoldFrom-PlayerPoints; break;
+                case "Gold": PlayerNextPromotion = ChallengerFrom-PlayerPoints; break;
+                default: PlayerNextPromotion = 0;
+            }
+
+            // Send Chat for Command
+            pData->GameServer()->SendChatTarget(pData->m_ClientID, "-------- Promotion --------");
+            str_format(aBuf, sizeof(aBuf), "%s League: %s, Next Promotion in: %f Points", pData->m_Name.Str(), playersLeague, PlayerNextPromotion);
+            pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
+            pData->GameServer()->SendChatTarget(pData->m_ClientID, "");
+            str_format(aBuf, sizeof(aBuf), "Unranked: %d - %d Points", UnrankedFrom, UnrankedTo);
+            pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
+            str_format(aBuf, sizeof(aBuf), "Bronze: %d - %d Points", BronzeFrom, BronzeTo);
+            pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
+            str_format(aBuf, sizeof(aBuf), "Silver: %d - %d Points", SilverFrom, SilverTo);
+            pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
+            str_format(aBuf, sizeof(aBuf), "Gold: %d - %d Points", GoldFrom, GoldTo);
+            pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
+            str_format(aBuf, sizeof(aBuf), "Challenger: %d + Points", UnrankedFrom);
+            pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
+            pData->GameServer()->SendChatTarget(pData->m_ClientID, "----------------------------------------");
+
+        }
+
+		dbg_msg("sql", "Showing promotion done");
 		return true;
 	}
 	catch (sql::SQLException &e)
