@@ -1994,20 +1994,20 @@ bool CSqlScore::ShowPromotionThread(CSqlServer* pSqlServer, const CSqlData *pGam
 
             // Send Chat for Command
             pData->GameServer()->SendChatTarget(pData->m_ClientID, "-------- Promotion --------");
-            str_format(aBuf, sizeof(aBuf), "%s League: %s, Next Promotion in: %f Points", pData->m_Name.Str(), playersLeague, PlayerNextPromotion);
+            str_format(aBuf, sizeof(aBuf), "%s League: %s, Next Promotion in: %d Points", pData->m_Name.Str(), playersLeague, PlayerNextPromotion);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
-            pData->GameServer()->SendChatTarget(pData->m_ClientID, "");
-            str_format(aBuf, sizeof(aBuf), "Unranked: %d - %d Points", UnrankedFrom, UnrankedTo);
+            pData->GameServer()->SendChatTarget(pData->m_ClientID, "\n");
+            str_format(aBuf, sizeof(aBuf), "Unranked:   %d - %d Points", UnrankedFrom, UnrankedTo);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
-            str_format(aBuf, sizeof(aBuf), "Bronze: %d - %d Points", BronzeFrom, BronzeTo);
+            str_format(aBuf, sizeof(aBuf), "Bronze:     %d - %d Points", BronzeFrom, BronzeTo);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
-            str_format(aBuf, sizeof(aBuf), "Silver: %d - %d Points", SilverFrom, SilverTo);
+            str_format(aBuf, sizeof(aBuf), "Silver:     %d - %d Points", SilverFrom, SilverTo);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
-            str_format(aBuf, sizeof(aBuf), "Gold: %d - %d Points", GoldFrom, GoldTo);
+            str_format(aBuf, sizeof(aBuf), "Gold:       %d - %d Points", GoldFrom, GoldTo);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
-            str_format(aBuf, sizeof(aBuf), "Challenger: %d + Points", UnrankedFrom);
+            str_format(aBuf, sizeof(aBuf), "Challenger: %d + Points", ChallengerFrom);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
-            pData->GameServer()->SendChatTarget(pData->m_ClientID, "----------------------------------------");
+            pData->GameServer()->SendChatTarget(pData->m_ClientID, "---------------------------------");
 
         }
 
