@@ -2002,9 +2002,9 @@ bool CSqlScore::ShowPromotionThread(CSqlServer* pSqlServer, const CSqlData *pGam
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
             str_format(aBuf, sizeof(aBuf), "Bronze:       %d - %d Points", BronzeFrom, BronzeTo);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
-            str_format(aBuf, sizeof(aBuf), "Silver:        %d - %d Points", SilverFrom, SilverTo);
+            str_format(aBuf, sizeof(aBuf), "Silver:         %d - %d Points", SilverFrom, SilverTo);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
-            str_format(aBuf, sizeof(aBuf), "Gold:          %d - %d Points", GoldFrom, GoldTo);
+            str_format(aBuf, sizeof(aBuf), "Gold:           %d - %d Points", GoldFrom, GoldTo);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
             str_format(aBuf, sizeof(aBuf), "Challenger: %d + Points", ChallengerFrom);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
