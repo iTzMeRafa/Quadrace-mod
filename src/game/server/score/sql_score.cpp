@@ -1979,31 +1979,32 @@ bool CSqlScore::ShowPromotionThread(CSqlServer* pSqlServer, const CSqlData *pGam
 
             // Get Player Points needed for next Promotion
             int PlayerNextPromotion = 0;
-            if (playersLeague == "Unranked") {
+            if (strcmp(playersLeague, "Unranked") == 0) {
                 PlayerNextPromotion = BronzeFrom-PlayerPoints;
             }
-            else if (playersLeague == "Bronze") {
+            else if (strcmp(playersLeague, "Bronze") == 0) {
                 PlayerNextPromotion = SilverFrom-PlayerPoints;
             }
-            else if (playersLeague == "Silver") {
+            else if (strcmp(playersLeague, "Silver") == 0) {
                 PlayerNextPromotion = GoldFrom-PlayerPoints;
             }
-            else if (playersLeague == "Gold") {
+            else if (strcmp(playersLeague, "Gold") == 0) {
                 PlayerNextPromotion = ChallengerFrom-PlayerPoints;
             }
 
             // Send Chat for Command
-            pData->GameServer()->SendChatTarget(pData->m_ClientID, "-------- Promotion --------");
-            str_format(aBuf, sizeof(aBuf), "%s League: %s, Next Promotion in: %d Points", pData->m_Name.Str(), playersLeague, PlayerNextPromotion);
+            str_format(aBuf, sizeof(aBuf), "-------- Promotion of %s --------", pData->m_Name.Str());
+            pData->GameServer()->SendChatTarget(pData->m_ClientID, "-------- Promotion of %s --------");
+            str_format(aBuf, sizeof(aBuf), "League: %s, Next Promotion in: %d Points", playersLeague, PlayerNextPromotion);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, "\n");
             str_format(aBuf, sizeof(aBuf), "Unranked:   %d - %d Points", UnrankedFrom, UnrankedTo);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
-            str_format(aBuf, sizeof(aBuf), "Bronze:     %d - %d Points", BronzeFrom, BronzeTo);
+            str_format(aBuf, sizeof(aBuf), "Bronze:       %d - %d Points", BronzeFrom, BronzeTo);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
-            str_format(aBuf, sizeof(aBuf), "Silver:     %d - %d Points", SilverFrom, SilverTo);
+            str_format(aBuf, sizeof(aBuf), "Silver:        %d - %d Points", SilverFrom, SilverTo);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
-            str_format(aBuf, sizeof(aBuf), "Gold:       %d - %d Points", GoldFrom, GoldTo);
+            str_format(aBuf, sizeof(aBuf), "Gold:          %d - %d Points", GoldFrom, GoldTo);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
             str_format(aBuf, sizeof(aBuf), "Challenger: %d + Points", ChallengerFrom);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
