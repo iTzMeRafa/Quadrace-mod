@@ -2008,8 +2008,6 @@ bool CSqlScore::ShowPromotionThread(CSqlServer* pSqlServer, const CSqlData *pGam
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
             str_format(aBuf, sizeof(aBuf), "Challenger: %d + Points", ChallengerFrom);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
-            pData->GameServer()->SendChatTarget(pData->m_ClientID, "---------------------------------");
-
         }
 
 		dbg_msg("sql", "Showing promotion done");
