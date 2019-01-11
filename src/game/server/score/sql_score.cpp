@@ -1901,4 +1901,59 @@ bool CSqlScore::ShowMapPointsThread(CSqlServer* pSqlServer, const CSqlData *pGam
 	return false;
 }
 
+void CSqlScore::ShowPromotion(int ClientID, const char* pName)
+{
+	CSqlScoreData *Tmp = new CSqlScoreData();
+	Tmp->m_ClientID = ClientID;
+	Tmp->m_Name = pName;
+
+	void *MapPointsThread = thread_init(ExecSqlFunc, new CSqlExecData(ShowMapPointsThread, Tmp));
+	thread_detach(MapPointsThread);
+}
+
+bool CSqlScore::ShowPromotionThread(CSqlServer* pSqlServer, const CSqlData *pGameData, bool HandleFailure)
+{
+	const CSqlScoreData *pData = dynamic_cast<const CSqlScoreData *>(pGameData);
+
+	if (HandleFailure)
+		return true;
+
+	try
+	{
+		char aBuf[512];
+		str_format(aBuf, sizeof(aBuf), "SELECT MIN(Time) as Time, t2.Points as Points FROM %s_race as t1 INNER JOIN %s_playermappoints as t2 ON t1.Map = t2.Map AND t1.Name = t2.Name WHERE t2.Map = '%s' AND t2.Name = '%s' HAVING Time IS NOT NULL;", pSqlServer->GetPrefix(), pSqlServer->GetPrefix(), pData->m_Map.ClrStr(), pData->m_Name.ClrStr());
+		pSqlServer->executeSqlQuery(aBuf);
+
+		if(pSqlServer->GetResults()->rowsCount() != 1)
+		{
+			str_format(aBuf, sizeof(aBuf), "%s has no score on this map", pData->m_Name.Str());
+		}
+		else
+		{
+			pSqlServer->GetResults()->next();
+			float PlayerTime = (float)pSqlServer->GetResults()->getDouble("Time");
+			float BestTime = ((CGameControllerDDRace*)pData->GameServer()->m_pController)->m_CurrentRecord;
+			float Slower = PlayerTime / BestTime - 1.0f;
+            int Points = (int)pSqlServer->GetResults()->getInt("Points");
+			//str_format(aBuf, sizeof(aBuf), "%s is %0.2f%% slower than map record, Points: %d", pData->m_Name.Str(), Slower*100.0f, (int)(100.0f*exp(-pData->GameServer()->m_MapS*Slower)));
+			str_format(aBuf, sizeof(aBuf), "%s is %0.2f%% slower than map record, Points: %d", pData->m_Name.Str(), Slower*100.0f, Points);
+		}
+		pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
+
+		dbg_msg("sql", "Showing map points done");
+		return true;
+	}
+	catch (sql::SQLException &e)
+	{
+		dbg_msg("sql", "MySQL Error: %s", e.what());
+		dbg_msg("sql", "ERROR: Could not show map points");
+	}
+	catch (CGameContextError &e)
+	{
+		dbg_msg("sql", "WARNING: Aborted showing map points due to reload/change of map.");
+		return true;
+	}
+	return false;
+}
+
 #endif

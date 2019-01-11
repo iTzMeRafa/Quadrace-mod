@@ -1633,3 +1633,29 @@ void CGameContext::ConMapPoints(IConsole::IResult *pResult, void *pUserData)
 		pPlayer->m_LastSQLQuery = pSelf->Server()->Tick();
 }
 #endif
+
+#if defined(CONF_SQL)
+void CGameContext::ConPromotion(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *) pUserData;
+	if (!CheckClientID(pResult->m_ClientID))
+		return;
+
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientID];
+	if (!pPlayer)
+		return;
+
+	if(g_Config.m_SvUseSQL)
+		if(pPlayer->m_LastSQLQuery + g_Config.m_SvSqlQueriesDelay * pSelf->Server()->TickSpeed() >= pSelf->Server()->Tick())
+			return;
+
+	if (pResult->NumArguments() > 0)
+		pSelf->Score()->ShowPromotion(pResult->m_ClientID, pResult->GetString(0));
+	else
+		pSelf->Score()->ShowPromotion(pResult->m_ClientID,
+				pSelf->Server()->ClientName(pResult->m_ClientID));
+
+	if(g_Config.m_SvUseSQL)
+		pPlayer->m_LastSQLQuery = pSelf->Server()->Tick();
+}
+#endif

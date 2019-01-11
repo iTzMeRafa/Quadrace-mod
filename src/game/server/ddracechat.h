@@ -59,5 +59,6 @@ CHAT_COMMAND("kill", "", CFGFLAG_CHAT|CFGFLAG_SERVER, ConProtectedKill, this, "K
 CHAT_COMMAND("points", "?r[player name]", CFGFLAG_CHAT|CFGFLAG_SERVER, ConPoints, this, "Shows the global points of a player beginning with name r (your rank by default)")
 CHAT_COMMAND("top5points", "?i[number]", CFGFLAG_CHAT|CFGFLAG_SERVER, ConTopPoints, this, "Shows five points of the global point ladder beginning with rank i (1 by default)")
 CHAT_COMMAND("mappoints", "?r[player name]", CFGFLAG_CHAT|CFGFLAG_SERVER, ConMapPoints, this, "Shows the points of a player on the current map")
+CHAT_COMMAND("promotion", "", CFGFLAG_CHAT|CFGFLAG_SERVER, ConPromotion, this, "Shows the league and next promotion of a player")
 #endif
 #undef CHAT_COMMAND

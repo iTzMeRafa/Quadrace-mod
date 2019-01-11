@@ -87,6 +87,7 @@ public:
 	virtual void ProcessRecordQueue() {};
 	virtual void InsertRecordQueue(const char *PlayerName, float Time) {};
 	virtual void ShowMapPoints(int ClientID, const char* pName) {};
+	virtual void ShowPromotion(int ClientID, const char* pName) {};
 
 	virtual void OnShutdown();
 };

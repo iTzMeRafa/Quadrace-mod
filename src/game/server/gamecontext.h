@@ -319,6 +319,7 @@ private:
 	static void ConPoints(IConsole::IResult *pResult, void *pUserData);
 	static void ConTopPoints(IConsole::IResult *pResult, void *pUserData);
 	static void ConMapPoints(IConsole::IResult *pResult, void *pUserData);
+	static void ConPromotion(IConsole::IResult *pResult, void *pUserData);
 	#endif
 
 	static void ConUTF8(IConsole::IResult *pResult, void *pUserData);

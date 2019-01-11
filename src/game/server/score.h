@@ -69,6 +69,7 @@ public:
 	virtual void ProcessRecordQueue() = 0;
 	virtual void InsertRecordQueue(const char *PlayerName, float Time) = 0;
 	virtual void ShowMapPoints(int ClientID, const char* pName) = 0;
+	virtual void ShowPromotion(int ClientID, const char* pName) = 0;
 
 	// called when the server is shut down but not on mapchange/reload
 	virtual void OnShutdown() = 0;
