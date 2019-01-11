@@ -1980,16 +1980,16 @@ bool CSqlScore::ShowPromotionThread(CSqlServer* pSqlServer, const CSqlData *pGam
             // Get Player Points needed for next Promotion
             int PlayerNextPromotion = 0;
             if (playersLeague == "Unranked") {
-                PlayerNextPromotion = BronzeFrom-PlayerPoints
+                PlayerNextPromotion = BronzeFrom-PlayerPoints;
             }
             else if (playersLeague == "Bronze") {
-                PlayerNextPromotion = SilverFrom-PlayerPoints
+                PlayerNextPromotion = SilverFrom-PlayerPoints;
             }
             else if (playersLeague == "Silver") {
-                PlayerNextPromotion = GoldFrom-PlayerPoints
+                PlayerNextPromotion = GoldFrom-PlayerPoints;
             }
             else if (playersLeague == "Gold") {
-                PlayerNextPromotion = ChallengerFrom-PlayerPoints
+                PlayerNextPromotion = ChallengerFrom-PlayerPoints;
             }
 
             // Send Chat for Command
