@@ -1994,7 +1994,7 @@ bool CSqlScore::ShowPromotionThread(CSqlServer* pSqlServer, const CSqlData *pGam
 
             // Send Chat for Command
             str_format(aBuf, sizeof(aBuf), "-------- Promotion of %s --------", pData->m_Name.Str());
-            pData->GameServer()->SendChatTarget(pData->m_ClientID, "-------- Promotion of %s --------");
+            pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
             str_format(aBuf, sizeof(aBuf), "League: %s, Next Promotion in: %d Points", playersLeague, PlayerNextPromotion);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, aBuf);
             pData->GameServer()->SendChatTarget(pData->m_ClientID, "\n");
