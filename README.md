@@ -1,41 +1,33 @@
-[![DDraceNetwork](https://ddnet.tw/ddnet-small.png)](https://ddnet.tw) [![CircleCI Build Status](https://circleci.com/gh/ddnet/ddnet/tree/master.png)](https://circleci.com/gh/ddnet/ddnet) [![Travis CI Build Status](https://travis-ci.org/ddnet/ddnet.svg?branch=master)](https://travis-ci.org/ddnet/ddnet) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/foeer8wbynqaqqho?svg=true)](https://ci.appveyor.com/project/def-/ddnet)
-
-Our own flavor of DDRace, a Teeworlds mod. See the [website](https://ddnet.tw) for more information.
-
-Development discussions happen on #ddnet on Quakenet ([Webchat](http://webchat.quakenet.org/?channels=ddnet&uio=d4)) or on [Discord in the developer channel](https://discord.gg/xsEd9xu).
-
-You can get binary releases on the [DDNet website](https://ddnet.tw/downloads/).
-
 Cloning
 -------
 
 To clone this repository with full history and external libraries (~350 MB):
 
-    git clone --recursive https://github.com/ddnet/ddnet
+    git clone --recursive https://github.com/iTzMeRafa/Quadrace-mod
 
 To clone this repository with full history when you have the necessary libraries on your system already (~220 MB):
 
-    git clone https://github.com/ddnet/ddnet
+    git clone https://github.com/iTzMeRafa/Quadrace-mod
 
-To clone this repository with history since we moved the libraries to https://github.com/ddnet/ddnet-libs (~40 MB):
+To clone this repository with history since we moved the libraries to https://github.com/iTzMeRafa/Quadrace-mod (~40 MB):
 
-    git clone --shallow-exclude=included-libs https://github.com/ddnet/ddnet
+    git clone --shallow-exclude=included-libs https://github.com/iTzMeRafa/Quadrace-mod
 
-To clone the libraries if you have previously cloned DDNet without them:
+To clone the libraries if you have previously cloned Quadrace without them:
 
     git submodule update --init --recursive
 
 Building on Linux and macOS
 ---------------------------
 
-To compile DDNet yourself, execute the following commands in the source root:
+To compile Quadrace yourself, execute the following commands in the source root:
 
     mkdir build
     cd build
     cmake ..
     make
 
-DDNet requires additional libraries, that are bundled for the most common platforms (Windows, Mac, Linux, all x86 and x86\_64). The bundled libraries are now in the ddnet-libs submodule.
+Quadrace requires additional libraries, that are bundled for the most common platforms (Windows, Mac, Linux, all x86 and x86\_64). The bundled libraries are now in the quadrace-libs submodule.
 
 You can install the required libraries on your system, `touch CMakeLists.txt` and CMake will use the system-wide libraries by default. You can install all required dependencies and CMake on Debian or Ubuntu like this:
 
